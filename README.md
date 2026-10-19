@@ -71,7 +71,7 @@ pnpm build && pnpm start   # the service worker only registers in production bui
 
 ## Using it as an installed app (PWA)
 
-The phone should run the timer as an installed app (full screen, no browser bars, opens offline). Inside the installed app the Full screen button is hidden, since the app is already full screen. Inside the installed app the Full screen button is hidden, since the app is already full screen.
+The phone should run the timer as an installed app (full screen, no browser bars, opens offline). Inside the installed app the Full screen button is hidden, since the app is already full screen.
 
 - **Android / Chrome:** the timer page shows an **Install** button. The manifest asks for full-screen display, for links to open in the installed app (`handle_links`) and for an already-open app window to be reused (`launch_handler`). Once installed, Chrome offers to open timer links in the app.
 - **iPhone / iPad:** Apple has no install prompt and does not open links in an installed web app (the Camera app sends a scanned QR code to Safari), so the timer page shows the *Share → Add to Home Screen* steps. Inside the installed app the start page has a **Scan QR code** button (camera + [jsQR](https://github.com/cozmo/jsQR), no server involved) and a field for the workout **code** (or a pasted link). It also lists recently used workouts, which work offline.

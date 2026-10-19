@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  async redirects() {
+    // The saved workouts tab became a section of the coach page.
+    return [{ source: "/coach/saved", destination: "/coach#saved", permanent: false }];
+  },
   async headers() {
     return [
       {
