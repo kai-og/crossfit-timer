@@ -12,3 +12,11 @@ export const workouts = pgTable("workouts", {
 });
 
 export type WorkoutRow = typeof workouts.$inferSelect;
+
+/** One row per coach who has signed in and chosen the name shown as the creator of their workouts. */
+export const coaches = pgTable("coaches", {
+  email: text("email").primaryKey(),
+  displayName: text("display_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

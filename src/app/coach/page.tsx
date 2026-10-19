@@ -1,12 +1,12 @@
-import { desc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { signOut } from "@/auth";
 import { CoachForm, type SavedWorkout } from "@/components/CoachForm";
-import { getDb, schema } from "@/db";
+import { getCoachName } from "@/lib/coach";
 import { getCoachEmail } from "@/lib/session";
 import { parseConfig } from "@/lib/timer/share";
+import { listWorkouts } from "@/lib/workoutQueries";
 
 export const metadata: Metadata = { title: "Coach · Set up a workout" };
 
@@ -24,10 +24,15 @@ async function CoachContent() {
   const email = await getCoachEmail();
   if (!email) redirect("/login");
 
-  const rows = await getDb().select().from(schema.workouts).orderBy(desc(schema.workouts.updatedAt));
+  // New coaches choose the name shown as the creator of their workouts before anything else.
+  const name = await getCoachName(email);
+  if (!name) redirect("/welcome");
+
+  const rows = await listWorkouts();
   const saved: SavedWorkout[] = rows.flatMap((r) => {
     const config = parseConfig(r.config);
-    return config ? [{ id: r.id, config, createdBy: r.createdBy }] : [];
+    // Coaches see the email of colleagues who have not chosen a name yet.
+    return config ? [{ id: r.id, config, creator: r.creatorName ?? r.createdBy }] : [];
   });
 
   return (
@@ -44,7 +49,10 @@ async function CoachContent() {
           }}
           className="text-sm"
         >
-          <span className="mr-3 text-zinc-500">{email}</span>
+          <span className="mr-3 text-zinc-500">{name}</span>
+          <a href="/welcome" className="mr-3 underline">
+            Change name
+          </a>
           <button type="submit" className="underline">
             Sign out
           </button>

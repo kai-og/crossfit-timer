@@ -8,6 +8,8 @@ export interface RecentWorkout {
   /** Set for workouts saved by a coach: reopening them fetches the latest version when online. */
   id?: string;
   config: WorkoutConfig;
+  /** Display name of the coach who saved it, when known. */
+  creator?: string;
 }
 
 /** Raw snapshot string, stable between reads so it works with useSyncExternalStore. */
@@ -27,25 +29,26 @@ export function parseRecent(raw: string): RecentWorkout[] {
       const config = parseConfig(item?.config);
       if (!config) return [];
       const id = typeof item.id === "string" ? item.id : undefined;
-      return [{ id, config }];
+      const creator = typeof item.creator === "string" ? item.creator : undefined;
+      return [{ id, config, creator }];
     });
   } catch {
     return [];
   }
 }
 
-export function findRecentById(id: string): WorkoutConfig | null {
-  return parseRecent(readRecentRaw()).find((r) => r.id === id)?.config ?? null;
+export function findRecentById(id: string): RecentWorkout | null {
+  return parseRecent(readRecentRaw()).find((r) => r.id === id) ?? null;
 }
 
 /** Remember a workout on this phone so it can be reopened with no connection. Most recent first, de-duplicated. */
-export function rememberWorkout(config: WorkoutConfig, id?: string) {
+export function rememberWorkout(config: WorkoutConfig, id?: string, creator?: string) {
   const sameConfig = JSON.stringify(config);
   const rest = parseRecent(readRecentRaw()).filter((r) =>
     id ? r.id !== id : r.id !== undefined || JSON.stringify(r.config) !== sameConfig,
   );
   try {
-    localStorage.setItem(KEY, JSON.stringify([{ id, config }, ...rest].slice(0, MAX)));
+    localStorage.setItem(KEY, JSON.stringify([{ id, config, creator }, ...rest].slice(0, MAX)));
     window.dispatchEvent(new Event("recent-workouts"));
   } catch {
     // Storage full or blocked (private mode): the timer still works, it just won't be remembered.

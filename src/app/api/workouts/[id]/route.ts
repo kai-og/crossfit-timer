@@ -4,6 +4,7 @@ import { getDb, schema } from "@/db";
 import { serviceError } from "@/lib/api";
 import { ID_PATTERN } from "@/lib/id";
 import { getCoachEmail } from "@/lib/session";
+import { getWorkout } from "@/lib/workoutQueries";
 import { parseConfig } from "@/lib/timer/share";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -11,16 +12,16 @@ type Ctx = { params: Promise<{ id: string }> };
 const noStore = { "Cache-Control": "no-store" };
 const notFound = () => NextResponse.json({ error: "Not found" }, { status: 404, headers: noStore });
 
-/** Public: the phone timer loads a workout by its unguessable id. Only the config is exposed, never the author. */
+/** Public: the phone timer loads a workout by its id. Exposes the settings and the creator's display name, never an email. */
 export async function GET(_request: Request, { params }: Ctx) {
   const { id } = await params;
   if (!ID_PATTERN.test(id)) return notFound();
   try {
-    const [row] = await getDb().select().from(schema.workouts).where(eq(schema.workouts.id, id));
+    const row = await getWorkout(id);
     if (!row) return notFound();
     const config = parseConfig(row.config);
     if (!config) return notFound();
-    return NextResponse.json({ id: row.id, config }, { headers: noStore });
+    return NextResponse.json({ id: row.id, config, creator: row.creatorName ?? undefined }, { headers: noStore });
   } catch (e) {
     return serviceError("GET /api/workouts/[id]", e);
   }

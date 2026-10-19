@@ -42,7 +42,7 @@ function usePagePaint(color: string) {
 /** How far ahead (ms) cues are handed to the audio clock. Covers a throttled 1s JS timer. */
 const LOOKAHEAD_MS = 1500;
 
-export function TimerScreen({ config }: { config: WorkoutConfig }) {
+export function TimerScreen({ config, creator }: { config: WorkoutConfig; creator?: string }) {
   const segments = useMemo(() => buildSegments(config), [config]);
   const [status, setStatus] = useState<Status>("ready");
   const [elapsed, setElapsed] = useState(0);
@@ -176,7 +176,10 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
     >
       <header className="timer-header w-full px-6 pt-[max(env(safe-area-inset-top),1.5rem)] text-center">
         <p className="truncate text-2xl font-semibold opacity-90">{config.name || describeConfig(config)}</p>
-        <p className="text-lg opacity-70">{describeConfig(config)}</p>
+        <p className="text-lg opacity-70">
+          {describeConfig(config)}
+          {creator ? ` · by ${creator}` : ""}
+        </p>
       </header>
 
       {status === "ready" ? (
@@ -200,6 +203,12 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
       )}
 
       <footer className="timer-controls">
+        {(status === "ready" || status === "finished") && (
+          // Full page load to the workout list: the installed iPhone app has no browser back button.
+          <a href="/t" className={`${btn} text-center`}>
+            ← Workouts
+          </a>
+        )}
         {status === "running" && (
           <button className={btn} onClick={pause}>
             Pause

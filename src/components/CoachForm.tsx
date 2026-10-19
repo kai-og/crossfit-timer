@@ -55,7 +55,8 @@ function toConfig(f: Form): WorkoutConfig {
 export interface SavedWorkout {
   id: string;
   config: WorkoutConfig;
-  createdBy: string;
+  /** Display name of the coach who saved it (or their email if they have not chosen one). */
+  creator: string;
 }
 
 function fromConfig(c: WorkoutConfig): Form {
@@ -361,7 +362,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
                     <p className="text-sm text-zinc-500">
-                      {describeConfig(w.config)} · code <span className="font-mono">{formatCode(w.id)}</span> · {w.createdBy}
+                      {describeConfig(w.config)} · code <span className="font-mono">{formatCode(w.id)}</span> · by {w.creator}
                     </p>
                   </div>
                   <div className="flex gap-2 text-sm">

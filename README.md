@@ -4,6 +4,7 @@ A workout timer for a CrossFit box. Coaches set up workouts on a computer; the t
 
 - **Modes:** For Time (with time cap), AMRAP, EMOM. Each is configurable, plus a get-ready countdown.
 - **Desktop → phone:** a coach saves a workout and gets a short link and a QR code. The phone opens it, taps START, and is done. No login on the phone.
+- **Phone start page:** pick a saved workout from the list, scan a QR code, or enter a code. The timer has a **← Workouts** button to go back.
 - **Phone timer:** huge clock readable from a few metres, colour per phase, sound cues, screen kept awake, pause/resume.
 - **Offline:** once a phone has opened the timer, it works with no signal (service worker caches the app; opened workouts are remembered on the phone).
 - **Access:** only `@yaqbot.com` Google accounts can configure and save workouts.
@@ -19,7 +20,8 @@ Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postg
 - `public/sw.js` — service worker: network-first for the `/t` shell with cached fallback, cache-first for hashed assets.
 - `src/auth.ts` — Google sign-in; the `signIn` callback only lets through Google-verified `@yaqbot.com` emails. Coach pages and write APIs also check the session themselves; `src/proxy.ts` adds a redirect in front.
 - Workout codes are 10 characters without look-alikes (no `0/o`, `1/l/i`), shown on the coach page as `abcde-fghjk` next to the QR code.
-- `GET /api/workouts/[id]` is public (the phone needs it) and exposes only the workout config, addressed by an unguessable 10-character id.
+- Each coach chooses a display name on first sign-in (`/welcome`, changeable later). It is stored in the `coaches` table and shown as the creator of their workouts on the coach page and on phones. Emails are never exposed publicly.
+- `GET /api/workouts/[id]` and `GET /api/workouts/public` (the phone's saved-workouts list) are public and read-only: they return the workout id, its settings and the creator's display name, nothing else. The "unguessable link" is therefore no longer a secret; workout settings are not sensitive and cannot be changed without signing in.
 
 ## Run locally
 

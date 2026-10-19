@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { findRecentById } from "@/lib/recent";
+import { findCachedWorkout } from "@/lib/library";
 import { parseWorkoutRef, refHref, type WorkoutRef } from "@/lib/workoutRef";
 import { QrScanner } from "./QrScanner";
 
@@ -18,7 +18,7 @@ async function resolve(ref: WorkoutRef): Promise<Resolved> {
       if (res.status !== 404) return { error: "The server had a problem. Try again in a moment." };
     } catch {
       // No connection: a workout already opened on this phone still works.
-      if (findRecentById(id)) return { href: refHref({ kind: "saved", id }) };
+      if (findCachedWorkout(id)) return { href: refHref({ kind: "saved", id }) };
       return { error: "No connection, and this workout has not been opened on this phone before." };
     }
   }

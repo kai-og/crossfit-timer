@@ -1,10 +1,11 @@
-import { desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { serviceError } from "@/lib/api";
+import { getCoachName } from "@/lib/coach";
 import { newId } from "@/lib/id";
 import { getCoachEmail } from "@/lib/session";
 import { parseConfig } from "@/lib/timer/share";
+import { listWorkouts } from "@/lib/workoutQueries";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -12,8 +13,7 @@ const noStore = { "Cache-Control": "no-store" };
 export async function GET() {
   if (!(await getCoachEmail())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const rows = await getDb().select().from(schema.workouts).orderBy(desc(schema.workouts.updatedAt));
-    return NextResponse.json({ workouts: rows }, { headers: noStore });
+    return NextResponse.json({ workouts: await listWorkouts() }, { headers: noStore });
   } catch (e) {
     return serviceError("GET /api/workouts", e);
   }
@@ -28,6 +28,10 @@ export async function POST(request: Request) {
   if (!config) return NextResponse.json({ error: "Invalid workout" }, { status: 400 });
 
   try {
+    // Every workout shows its creator's name, so a coach must have chosen one first.
+    if (!(await getCoachName(email))) {
+      return NextResponse.json({ error: "Choose your name first" }, { status: 403, headers: noStore });
+    }
     const [row] = await getDb()
       .insert(schema.workouts)
       .values({ id: newId(), name: config.name, config, createdBy: email })
