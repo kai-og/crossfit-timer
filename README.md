@@ -42,6 +42,7 @@ pnpm build && pnpm start   # the service worker only registers in production bui
 | `DATABASE_URL` | Neon Postgres connection string |
 | `AUTH_SECRET` | random secret for Auth.js sessions (`openssl rand -base64 33`) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client |
+| `EXTRA_COACH_EMAILS` | optional, testing only: extra exact emails allowed to sign in |
 
 ## Deploying
 
@@ -51,6 +52,10 @@ pnpm build && pnpm start   # the service worker only registers in production bui
    `https://<your-domain>/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`.
 4. Add `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` and `AUTH_SECRET` to the Vercel project's environment variables and redeploy.
 5. Create the table once: `vercel env pull .env.local` (or copy `DATABASE_URL`), then `pnpm db:push`.
+
+## Testing sign-in without a @yaqbot.com account
+
+`EXTRA_COACH_EMAILS` (comma-separated, exact addresses, empty by default) lets specific other Google accounts sign in, so the full flow can be tested with a personal account. Set it temporarily, test, then remove it. The domain rule itself is unit-tested.
 
 ## Known limits
 
