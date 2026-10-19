@@ -6,10 +6,38 @@ import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState } from "@/lib/timer/engine";
 import { describeConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
-import { useOfflineReady } from "@/lib/useOfflineReady";
 import { useWakeLock } from "@/lib/useWakeLock";
 
 type Status = "ready" | "running" | "paused" | "finished";
+type Phase = "ready" | "countdown" | "work" | "warning" | "finished";
+
+const PHASE_BG: Record<Phase, string> = {
+  ready: "#09090b",
+  countdown: "#f59e0b",
+  work: "#047857",
+  warning: "#dc2626",
+  finished: "#0369a1",
+};
+
+/**
+ * Paint the whole page, not just our container. On iPhone Safari the notch / safe-area strips in landscape (and the
+ * browser UI tint) come from the root background and theme-color; if only <main> changes colour, the sides keep the old one.
+ */
+function usePagePaint(color: string) {
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    html.style.backgroundColor = color;
+    body.style.backgroundColor = color;
+    meta?.setAttribute("content", color);
+    return () => {
+      html.style.backgroundColor = "";
+      body.style.backgroundColor = "";
+      meta?.setAttribute("content", PHASE_BG.ready);
+    };
+  }, [color]);
+}
 
 /** How far ahead (ms) cues are handed to the audio clock. Covers a throttled 1s JS timer. */
 const LOOKAHEAD_MS = 1500;
@@ -36,7 +64,6 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
     mutedRef.current = muted;
   }, [muted]);
 
-  const offlineReady = useOfflineReady();
   const wakeLock = useWakeLock(status === "running" || status === "paused");
 
   const tick = useCallback(() => {
@@ -120,16 +147,9 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
   const lastTen =
     !inCountdown && !seg.countsUp && state.segmentRemainingMs <= 10_000 && status === "running";
 
-  const bg =
-    status === "ready"
-      ? "bg-zinc-950"
-      : status === "finished"
-        ? "bg-sky-700"
-        : inCountdown
-          ? "bg-amber-500 text-black"
-          : lastTen
-            ? "bg-red-600"
-            : "bg-emerald-700";
+  const phase: Phase = status === "ready" ? "ready" : status === "finished" ? "finished" : inCountdown ? "countdown" : lastTen ? "warning" : "work";
+  const bg = PHASE_BG[phase];
+  usePagePaint(bg);
 
   const clock = formatClock(clockMs(state), seg.countsUp && !inCountdown);
   const label =
@@ -143,17 +163,24 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
             ? "For Time"
             : "AMRAP";
 
-  const btn = "rounded-2xl bg-black/30 px-6 py-4 text-xl font-semibold active:bg-black/50";
+  // Clock width in em (digits are wider than colons), so the font can be sized to always fit the screen.
+  const clockWidthEm = [...clock].reduce((w, ch) => w + (ch === ":" ? 0.32 : 0.62), 0);
+
+  const btn =
+    "rounded-2xl border border-white/25 bg-black/55 px-6 py-4 text-xl font-semibold text-white active:bg-black/75";
 
   return (
-    <main className={`fixed inset-0 flex select-none flex-col items-center justify-between text-white ${bg}`}>
-      <header className="w-full px-6 pt-[max(env(safe-area-inset-top),1.5rem)] text-center">
+    <main
+      className="timer-root select-none text-white"
+      style={{ backgroundColor: bg, color: phase === "countdown" ? "#000" : undefined }}
+    >
+      <header className="timer-header w-full px-6 pt-[max(env(safe-area-inset-top),1.5rem)] text-center">
         <p className="truncate text-2xl font-semibold opacity-90">{config.name || describeConfig(config)}</p>
         <p className="text-lg opacity-70">{describeConfig(config)}</p>
       </header>
 
       {status === "ready" ? (
-        <div className="flex w-full max-w-md flex-col items-center gap-8 px-4">
+        <div className="timer-center flex w-full max-w-md flex-col items-center gap-6 justify-self-center px-4">
           <button
             onClick={start}
             className="rounded-full bg-emerald-500 px-14 py-10 text-5xl font-bold text-black shadow-lg active:scale-95"
@@ -163,19 +190,16 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
           <InstallHint />
         </div>
       ) : (
-        <div className="flex flex-col items-center">
-          <p className="text-[8vmin] font-semibold uppercase tracking-widest opacity-90">{label}</p>
-          <p
-            className="font-bold leading-none"
-            style={{ fontSize: "min(32vw, 40vh)", fontVariantNumeric: "tabular-nums" }}
-          >
+        <div className="timer-center flex flex-col items-center">
+          <p className="timer-label font-semibold uppercase tracking-widest opacity-90">{label}</p>
+          <p className="timer-clock" style={{ "--clock-w": clockWidthEm } as React.CSSProperties}>
             {clock}
           </p>
-          {status === "paused" && <p className="mt-4 text-4xl font-semibold">PAUSED</p>}
+          {status === "paused" && <p className="mt-2 text-3xl font-semibold">PAUSED</p>}
         </div>
       )}
 
-      <footer className="flex w-full flex-wrap items-center justify-center gap-3 px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+      <footer className="timer-controls">
         {status === "running" && (
           <button className={btn} onClick={pause}>
             Pause
@@ -187,7 +211,10 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
           </button>
         )}
         {status === "running" && isForTime && !inCountdown && (
-          <button className={`${btn} bg-emerald-400! text-black`} onClick={finishNow}>
+          <button
+            className="rounded-2xl bg-emerald-400 px-6 py-4 text-xl font-semibold text-black active:bg-emerald-300"
+            onClick={finishNow}
+          >
             Finished
           </button>
         )}
@@ -206,14 +233,8 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
         )}
       </footer>
 
-      {status === "ready" && (
-        <p className="absolute bottom-28 px-6 text-center text-base opacity-60">
-          Tap START to enable sound and keep the screen on. Make sure the phone is not on silent.
-          {offlineReady && <span className="mt-1 block text-emerald-400">✓ Works offline</span>}
-        </p>
-      )}
       {wakeLock === "unsupported" && status !== "ready" && (
-        <p className="absolute top-1 text-xs opacity-60">
+        <p className="absolute left-0 top-1 w-full text-center text-xs opacity-60">
           Screen may dim: keep-awake is not supported on this browser.
         </p>
       )}
