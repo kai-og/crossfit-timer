@@ -5,6 +5,7 @@ import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState } from "@/lib/timer/engine";
 import { describeConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
+import { useOfflineReady } from "@/lib/useOfflineReady";
 import { useWakeLock } from "@/lib/useWakeLock";
 
 type Status = "ready" | "running" | "paused" | "finished";
@@ -34,6 +35,7 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
     mutedRef.current = muted;
   }, [muted]);
 
+  const offlineReady = useOfflineReady();
   const wakeLock = useWakeLock(status === "running" || status === "paused");
 
   const tick = useCallback(() => {
@@ -203,6 +205,7 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
       {status === "ready" && (
         <p className="absolute bottom-28 px-6 text-center text-base opacity-60">
           Tap START to enable sound and keep the screen on. Make sure the phone is not on silent.
+          {offlineReady && <span className="mt-1 block text-emerald-400">✓ Works offline</span>}
         </p>
       )}
       {wakeLock === "unsupported" && status !== "ready" && (
