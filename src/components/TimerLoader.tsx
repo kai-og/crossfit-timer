@@ -16,6 +16,7 @@ import { InstallHint } from "./InstallHint";
 import { JoinWorkout } from "./JoinWorkout";
 import { usePagePaint } from "@/lib/usePagePaint";
 import { TimerScreen } from "./TimerScreen";
+import { TimerSkeleton } from "./TimerSkeleton";
 
 /** How long to wait for the server before falling back to the copy saved on this phone (gym Wi-Fi is bad). */
 const FETCH_TIMEOUT_MS = 4000;
@@ -40,43 +41,55 @@ function InlineWorkout({ encoded }: { encoded?: string }) {
   return <WorkoutPicker message={encoded ? "invalid" : "pick"} />;
 }
 
-type Loaded =
+type View =
+  | { status: "loading" }
   | { status: "ok"; config: WorkoutConfig; creator?: string }
   | { status: "missing" }
   | { status: "unavailable" };
 
-/** Workout saved by a coach: fetched by id, with the phone's own copy as the offline fallback. */
+const sameView = (a: View, b: View) =>
+  a.status === b.status &&
+  (a.status !== "ok" || (b.status === "ok" && a.creator === b.creator && JSON.stringify(a.config) === JSON.stringify(b.config)));
+
+/**
+ * Workout saved by a coach. If this phone already has a copy it starts instantly from that, and the server is asked in
+ * the background for the latest version; only a workout never seen before waits for the network.
+ */
 function SavedWorkout({ id }: { id: string }) {
-  const [result, setResult] = useState<Loaded | null>(null);
+  const [view, setView] = useState<View>(() => {
+    const cached = findCachedWorkout(id);
+    return cached ? { status: "ok", config: cached.config, creator: cached.creator } : { status: "loading" };
+  });
 
   useEffect(() => {
     let cancelled = false;
-    const finish = (r: Loaded) => {
-      if (!cancelled) setResult(r);
+    // Keep the current object when nothing changed, so a running timer is never disturbed.
+    const apply = (next: View) => {
+      if (!cancelled) setView((prev) => (sameView(prev, next) ? prev : next));
     };
     fetch(`/api/workouts/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
       .then(async (res) => {
-        if (res.status === 404) return finish({ status: "missing" });
+        if (res.status === 404) return apply({ status: "missing" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = (await res.json()) as { config?: unknown; creator?: unknown };
         const config = parseConfig(body.config);
         if (!config) throw new Error("bad payload");
         const creator = typeof body.creator === "string" ? body.creator : undefined;
         rememberWorkout(config, id, creator);
-        finish({ status: "ok", config, creator });
+        apply({ status: "ok", config, creator });
       })
       .catch(() => {
-        const cached = findCachedWorkout(id);
-        finish(cached ? { status: "ok", ...cached } : { status: "unavailable" });
+        // Offline or slow: keep what is on screen, or say so if there was nothing to show.
+        if (!cancelled) setView((prev) => (prev.status === "loading" ? { status: "unavailable" } : prev));
       });
     return () => {
       cancelled = true;
     };
   }, [id]);
 
-  if (!result) return <main className="fixed inset-0 flex items-center justify-center bg-night text-white/60">Loading workout…</main>;
-  if (result.status === "ok") return <TimerScreen config={result.config} creator={result.creator} />;
-  return <WorkoutPicker message={result.status === "missing" ? "missing" : "unavailable"} />;
+  if (view.status === "loading") return <TimerSkeleton />;
+  if (view.status === "ok") return <TimerScreen config={view.config} creator={view.creator} />;
+  return <WorkoutPicker message={view.status === "missing" ? "missing" : "unavailable"} />;
 }
 
 const NOTICES: Record<"invalid" | "missing" | "unavailable", string> = {

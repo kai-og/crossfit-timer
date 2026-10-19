@@ -1,12 +1,12 @@
 // Service worker: makes the phone timer work without a connection.
 //
 // - Install: fetch the /t shell and cache it together with every script, stylesheet and font it references.
-// - /t navigations: network first, falling back to the cached shell. The workout lives in the URL query (and in the
-//   phone's recent-workouts list), so one cached shell serves every workout.
+// - /t navigations: network first, but a slow network (1.5s) or no network shows the cached shell. The workout
+//   lives in the URL query (and in the phone's saved copies), so one cached shell serves every workout.
 // - /_next/static/*: cache first. These files are content-hashed, so they never change.
 // - Everything else same-origin: stale-while-revalidate.
 
-const CACHE = "timer-v2";
+const CACHE = "timer-v3";
 const SHELL = "/t";
 
 /** Cache every script, stylesheet and font the shell references, plus the manifest and icons. */
@@ -48,10 +48,14 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/** How long a slow network may delay the page before the cached copy is shown instead (gym Wi-Fi is bad). */
+const SHELL_NETWORK_TIMEOUT_MS = 1500;
+
 async function networkFirstShell(event) {
   const cache = await caches.open(CACHE);
-  try {
-    const res = await fetch(event.request);
+  const cached = await cache.match(SHELL);
+
+  const network = fetch(event.request).then((res) => {
     if (res.ok) {
       const forCache = res.clone();
       const forParsing = res.clone();
@@ -65,11 +69,20 @@ async function networkFirstShell(event) {
       );
     }
     return res;
+  });
+
+  if (!cached) return network;
+
+  try {
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(null), SHELL_NETWORK_TIMEOUT_MS));
+    const res = await Promise.race([network, timeout]);
+    if (res) return res;
   } catch {
-    const cached = await cache.match(SHELL);
-    if (cached) return cached;
-    throw new Error("offline and shell not cached");
+    // Offline: fall through to the cached shell.
   }
+  // Slow or offline: show the cached shell now. A slow request keeps going and refreshes the cache for next time.
+  event.waitUntil(network.catch(() => {}));
+  return cached;
 }
 
 async function cacheFirst(request) {

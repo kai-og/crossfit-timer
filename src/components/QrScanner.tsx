@@ -86,7 +86,7 @@ export function QrScanner({ onText, onClose }: { onText: (text: string) => boole
 
   // Rendered into <body>: inside the sticky bottom bar, its backdrop blur would make `fixed` relative to the bar.
   return createPortal(
-    <div role="dialog" aria-label="Scan QR code" className="fixed inset-0 z-50 flex flex-col bg-black text-white">
+    <div role="dialog" aria-label="Scan QR code" className="fixed inset-x-0 top-0 z-50 flex h-dvh flex-col bg-black text-white">
       <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
 
       <div className="relative flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),1rem)]">

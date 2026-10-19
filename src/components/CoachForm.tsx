@@ -216,7 +216,7 @@ export function CoachForm({ initial }: { initial?: SavedWorkout }) {
                 <IconCopy size={16} aria-hidden="true" />
                 {copied ? "Copied" : "Copy link"}
               </button>
-              <a href="/coach/saved" className="underline">
+              <a href="#saved" className="underline">
                 Saved workouts
               </a>
               <button type="button" onClick={() => setJustSaved(null)} aria-label="Dismiss" className="p-1">

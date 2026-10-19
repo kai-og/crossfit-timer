@@ -58,7 +58,7 @@ export function ConfirmDialog({
   // Rendered into <body> so no transformed or filtered ancestor can trap it.
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 sm:items-center"
+      className="fixed inset-x-0 top-0 z-[100] flex h-dvh items-end justify-center bg-black/60 p-4 sm:items-center"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}

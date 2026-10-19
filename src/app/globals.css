@@ -30,6 +30,27 @@ body {
   font-family: var(--font-barlow), system-ui, sans-serif;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Brief highlight, used to point at a section the sidebar jumped to. */
+.flash {
+  animation: flash 1.4s ease-out;
+}
+@keyframes flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--lime);
+    background: rgb(198 244 50 / 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+    background: transparent;
+  }
+}
+
 /* Clocks and big headings. */
 .font-display {
   font-family: var(--font-barlow-condensed), "Arial Narrow", sans-serif;

@@ -42,18 +42,15 @@ export function SavedList({ saved }: { saved: SavedWorkout[] }) {
 
   if (saved.length === 0) {
     return (
-      <p className="text-muted">
-        Nothing saved yet.{" "}
-        <a href="/coach" className="text-ink underline">
-          Set up a workout
-        </a>{" "}
-        and save it to get a short code and QR code.
+      <p className="text-sm text-muted">
+        <span className="text-ink">Saved workouts:</span> nothing yet. Save a workout above to get a short code and QR code.
       </p>
     );
   }
 
   return (
     <>
+      <h2 className="font-display mb-3 text-3xl leading-none">Saved workouts</h2>
       {error && (
         <p role="alert" className="mb-3 text-sm text-alert">
           {error}
@@ -75,7 +72,10 @@ export function SavedList({ saved }: { saved: SavedWorkout[] }) {
             <div className="mt-1 flex gap-1.5">
               <button
                 type="button"
-                onClick={() => router.push(`/coach?edit=${w.id}`)}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  router.push(`/coach?edit=${w.id}`);
+                }}
                 aria-label="Edit"
                 title="Edit"
                 className={iconButton}

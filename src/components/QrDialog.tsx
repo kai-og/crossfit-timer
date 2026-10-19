@@ -47,7 +47,7 @@ export function QrDialog({ open, title, id, url, onClose }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-x-0 top-0 z-[100] flex h-dvh items-center justify-center bg-black/60 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
