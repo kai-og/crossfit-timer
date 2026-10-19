@@ -130,7 +130,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
   useEffect(() => {
     let cancelled = false;
     if (!url) return;
-    QRCode.toDataURL(url, { margin: 1, width: 280 }).then((data) => {
+    QRCode.toDataURL(url, { margin: 1, width: 360 }).then((data) => {
       if (!cancelled) setQrState({ url, data });
     });
     return () => {
@@ -199,7 +199,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
   const mode = MODES.find((m) => m.id === form.mode)!;
 
   return (
-    <div className="grid gap-8 md:grid-cols-[1fr_320px]">
+    <div className="grid gap-6 md:grid-cols-[1fr_300px]">
       <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-sm font-medium">Mode</legend>
@@ -274,16 +274,21 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
         )}
       </form>
 
-      <aside className="flex flex-col gap-4 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-800">
+      <aside className="flex flex-col gap-3 rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
         <div>
-          <p className="text-sm text-zinc-500">Preview</p>
-          <p className="text-xl font-semibold">{config.name || "Untitled workout"}</p>
+          <p className="truncate text-xl font-semibold">{config.name || "Untitled workout"}</p>
           <p className="text-zinc-600 dark:text-zinc-400">{valid ? describeConfig(config) : "Fix the errors to continue"}</p>
         </div>
 
         {valid && qr && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={qr} alt="QR code for the timer link" width={280} height={280} className="self-center rounded-lg bg-white" />
+          <img
+            src={qr}
+            alt="QR code for the timer link"
+            // Shrinks on short screens so the page still fits without scrolling.
+            style={{ width: "min(180px, 26vh)", height: "auto", aspectRatio: "1" }}
+            className="self-center rounded-lg bg-white"
+          />
         )}
 
         <div className="flex flex-col gap-2">
@@ -291,7 +296,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
             type="button"
             onClick={save}
             disabled={!valid || saving || (editingId !== null && !dirty)}
-            className="rounded-xl bg-zinc-900 px-4 py-3 text-lg font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="rounded-xl bg-zinc-900 px-4 py-2.5 text-lg font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
             {saving ? "Saving…" : editingId ? (dirty ? "Update saved workout" : "Saved ✓") : "Save workout"}
           </button>
@@ -305,12 +310,13 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
               Start a new workout
             </button>
           )}
+          <div className="grid grid-cols-2 gap-2">
           <a
             href={valid ? path : undefined}
             target="_blank"
             rel="noopener"
             aria-disabled={!valid}
-            className={`rounded-xl px-4 py-3 text-center text-lg font-semibold text-white ${
+            className={`rounded-xl px-3 py-2.5 text-center font-semibold text-white ${
               valid ? "bg-emerald-600 hover:bg-emerald-700" : "pointer-events-none bg-zinc-400"
             }`}
           >
@@ -320,50 +326,56 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
             type="button"
             onClick={copy}
             disabled={!valid}
-            className="rounded-xl border border-zinc-300 px-4 py-3 font-medium hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            className="rounded-xl border border-zinc-300 px-3 py-2.5 font-medium hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
           >
             {copied ? "Copied!" : "Copy link"}
           </button>
+          </div>
           <p className="text-xs text-zinc-500">Scan the QR code with the phone on the rig, then tap START.</p>
         </div>
       </aside>
 
       <section className="md:col-span-2">
-        <h2 className="mb-3 text-xl font-semibold">Saved workouts</h2>
         {saved.length === 0 ? (
-          <p className="text-zinc-500">Nothing saved yet. Save a workout to get a short link and QR code.</p>
+          <p className="text-sm text-zinc-500">
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Saved workouts:</span> nothing yet. Save one to
+            get a short link and QR code.
+          </p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {saved.map((w) => (
-              <li
-                key={w.id}
-                className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-                  w.id === editingId ? "border-emerald-600" : "border-zinc-200 dark:border-zinc-800"
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
-                  <p className="text-sm text-zinc-500">
-                    {describeConfig(w.config)} · {w.createdBy}
-                  </p>
-                </div>
-                <div className="flex gap-2 text-sm">
-                  <button type="button" onClick={() => load(w)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                    Edit
-                  </button>
-                  <button type="button" onClick={() => copyLink(w.id)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                    {copiedId === w.id ? "Copied!" : "Copy link"}
-                  </button>
-                  <a href={`/t?w=${w.id}`} target="_blank" rel="noopener" className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                    Open
-                  </a>
-                  <button type="button" onClick={() => remove(w)} className="rounded-lg border border-red-300 px-3 py-2 text-red-700 dark:border-red-900 dark:text-red-300">
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <h2 className="mb-2 text-lg font-semibold">Saved workouts</h2>
+            <ul className="flex flex-col gap-2">
+              {saved.map((w) => (
+                <li
+                  key={w.id}
+                  className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
+                    w.id === editingId ? "border-emerald-600" : "border-zinc-200 dark:border-zinc-800"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
+                    <p className="text-sm text-zinc-500">
+                      {describeConfig(w.config)} · {w.createdBy}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 text-sm">
+                    <button type="button" onClick={() => load(w)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => copyLink(w.id)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                      {copiedId === w.id ? "Copied!" : "Copy link"}
+                    </button>
+                    <a href={`/t?w=${w.id}`} target="_blank" rel="noopener" className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                      Open
+                    </a>
+                    <button type="button" onClick={() => remove(w)} className="rounded-lg border border-red-300 px-3 py-2 text-red-700 dark:border-red-900 dark:text-red-300">
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </div>

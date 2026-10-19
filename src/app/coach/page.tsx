@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Coach · Set up a workout" };
 
 export default function CoachPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-5 py-8 sm:py-12">
+    <main className="mx-auto w-full max-w-4xl px-5 py-5 sm:py-6">
       <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
         <CoachContent />
       </Suspense>
@@ -32,9 +32,9 @@ async function CoachContent() {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-3xl font-bold">Set up a workout</h1>
+          <h1 className="mb-0.5 text-2xl font-bold">Set up a workout</h1>
           <p className="text-zinc-500">Configure it here, then open the link on the phone next to the rig.</p>
         </div>
         <form

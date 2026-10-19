@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { findRecentById, parseRecent, readRecentRaw, rememberWorkout, subscribeRecent } from "@/lib/recent";
 import { decodeConfig, describeConfig, encodeConfig, parseConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
+import { InstallHint } from "./InstallHint";
 import { TimerScreen } from "./TimerScreen";
 
 /** How long to wait for the server before falling back to the copy saved on this phone (gym Wi-Fi is bad). */
@@ -83,6 +84,7 @@ function WorkoutPicker({ message }: { message: keyof typeof MESSAGES }) {
     <main className="flex min-h-screen flex-col items-center gap-6 bg-zinc-950 p-6 pt-16 text-center text-white">
       <h1 className="text-3xl font-bold">{title}</h1>
       <p className="max-w-sm opacity-70">{body}</p>
+      <InstallHint className="w-full max-w-sm" />
       {recent.length > 0 && (
         <ul className="flex w-full max-w-sm flex-col gap-3">
           {recent.map((r) => {

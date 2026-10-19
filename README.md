@@ -53,6 +53,13 @@ pnpm build && pnpm start   # the service worker only registers in production bui
 4. Add `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` and `AUTH_SECRET` to the Vercel project's environment variables and redeploy.
 5. Create the table once: `vercel env pull .env.local` (or copy `DATABASE_URL`), then `pnpm db:push`.
 
+## Using it as an installed app (PWA)
+
+The phone should run the timer as an installed app (full screen, no browser bars, opens offline).
+
+- **Android / Chrome:** the timer page shows an **Install** button. The manifest asks for full-screen display, for links to open in the installed app (`handle_links`) and for an already-open app window to be reused (`launch_handler`). Once installed, Chrome offers to open timer links in the app.
+- **iPhone / iPad:** Apple has no install prompt and does not open links in an installed web app, so the timer page shows the *Share → Add to Home Screen* steps. Open the timer from the home screen icon; it lists recently used workouts, which also work offline.
+
 ## Testing sign-in without a @yaqbot.com account
 
 `EXTRA_COACH_EMAILS` (comma-separated, exact addresses, empty by default) lets specific other Google accounts sign in, so the full flow can be tested with a personal account. Set it temporarily, test, then remove it. The domain rule itself is unit-tested.

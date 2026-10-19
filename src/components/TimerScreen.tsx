@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { InstallHint } from "@/components/InstallHint";
 import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState } from "@/lib/timer/engine";
 import { describeConfig } from "@/lib/timer/share";
@@ -152,12 +153,15 @@ export function TimerScreen({ config }: { config: WorkoutConfig }) {
       </header>
 
       {status === "ready" ? (
-        <button
-          onClick={start}
-          className="rounded-full bg-emerald-500 px-14 py-10 text-5xl font-bold text-black shadow-lg active:scale-95"
-        >
-          START
-        </button>
+        <div className="flex w-full max-w-md flex-col items-center gap-8 px-4">
+          <button
+            onClick={start}
+            className="rounded-full bg-emerald-500 px-14 py-10 text-5xl font-bold text-black shadow-lg active:scale-95"
+          >
+            START
+          </button>
+          <InstallHint />
+        </div>
       ) : (
         <div className="flex flex-col items-center">
           <p className="text-[8vmin] font-semibold uppercase tracking-widest opacity-90">{label}</p>
