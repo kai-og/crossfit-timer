@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Barlow, Barlow_Condensed } from "next/font/google";
 import { RegisterSW } from "@/components/RegisterSW";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlow = Barlow({
+  variable: "--font-barlow",
   subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// The scoreboard face: used for clocks, workout names and big headings.
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-condensed",
   subsets: ["latin"],
+  weight: ["500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "CrossFit Timer",
+  title: "WOD Timer",
   description: "Workout timer for the box: set it up on desktop, run it full screen on a phone.",
   icons: { apple: "/icons/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "WOD Timer", statusBarStyle: "black-translucent" },
@@ -22,12 +25,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}
-        <RegisterSW /></body>
+    <html lang="en" className={`${barlow.variable} ${barlowCondensed.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <RegisterSW />
+      </body>
     </html>
   );
 }

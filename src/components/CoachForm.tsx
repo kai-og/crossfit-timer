@@ -1,17 +1,28 @@
 "use client";
 
-import QRCode from "qrcode";
+import {
+  IconCheck,
+  IconCopy,
+  IconDeviceFloppy,
+  IconExternalLink,
+  IconFlame,
+  IconInfinity,
+  IconPencil,
+  IconRepeat,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
+import QRCode from "qrcode";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { validateConfig } from "@/lib/timer/engine";
+import { startClock, validateConfig } from "@/lib/timer/engine";
 import { describeConfig, encodeConfig } from "@/lib/timer/share";
-import { formatCode } from "@/lib/workoutRef";
 import type { Mode, WorkoutConfig } from "@/lib/timer/types";
+import { formatCode } from "@/lib/workoutRef";
 
-const MODES: { id: Mode; label: string; hint: string }[] = [
-  { id: "fortime", label: "For Time", hint: "Clock counts up until the athlete finishes or the cap hits." },
-  { id: "amrap", label: "AMRAP", hint: "As many rounds as possible before time runs out." },
-  { id: "emom", label: "EMOM", hint: "Every interval, for a number of rounds." },
+const MODES: { id: Mode; label: string; hint: string; Icon: typeof IconFlame }[] = [
+  { id: "fortime", label: "For time", hint: "The clock counts up until the athlete finishes or the cap hits.", Icon: IconFlame },
+  { id: "amrap", label: "AMRAP", hint: "As many rounds as possible before time runs out.", Icon: IconInfinity },
+  { id: "emom", label: "EMOM", hint: "Every interval, for a number of rounds.", Icon: IconRepeat },
 ];
 
 interface Form {
@@ -71,6 +82,12 @@ function fromConfig(c: WorkoutConfig): Form {
   }
 }
 
+const card = "rounded-xl border border-line bg-white p-4";
+const control =
+  "rounded-lg border border-line bg-white px-3 py-2 text-base text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-lime";
+const iconButton =
+  "flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink hover:border-ink hover:bg-paper";
+
 function NumberField({
   label,
   value,
@@ -82,12 +99,12 @@ function NumberField({
   value: number;
   onChange: (n: number) => void;
   max: number;
-  suffix?: string;
+  suffix: string;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium">
+    <label className="flex flex-col gap-1.5 text-xs text-muted">
       {label}
-      <span className="flex items-center gap-2">
+      <span className="relative block">
         <input
           type="number"
           inputMode="numeric"
@@ -95,11 +112,24 @@ function NumberField({
           max={max}
           value={Number.isNaN(value) ? "" : value}
           onChange={(e) => onChange(e.target.value === "" ? NaN : Math.trunc(Number(e.target.value)))}
-          className="w-24 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-lg text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          className={`${control} w-24 pr-11`}
         />
-        {suffix && <span className="font-normal text-zinc-500">{suffix}</span>}
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted">{suffix}</span>
       </span>
     </label>
+  );
+}
+
+/** A small phone showing what the athlete will see before pressing start. */
+function PhonePreview({ config, valid }: { config: WorkoutConfig; valid: boolean }) {
+  return (
+    <div className="rounded-[18px] bg-black p-1" style={{ width: 104 }} aria-hidden="true">
+      <div className="flex h-[148px] flex-col items-center justify-center gap-1.5 rounded-[14px] bg-night px-1 text-white">
+        <span className="font-display max-w-full truncate text-xs text-white/70">{config.name || "Workout"}</span>
+        <span className="font-display text-4xl leading-none text-white/90">{valid ? startClock(config) : "--:--"}</span>
+        <span className="h-1 w-14 rounded-full bg-lime" />
+      </div>
+    </div>
   );
 }
 
@@ -132,7 +162,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
   useEffect(() => {
     let cancelled = false;
     if (!url) return;
-    QRCode.toDataURL(url, { margin: 1, width: 360 }).then((data) => {
+    QRCode.toDataURL(url, { margin: 1, width: 360, color: { dark: "#14161a", light: "#ffffff" } }).then((data) => {
       if (!cancelled) setQrState({ url, data });
     });
     return () => {
@@ -199,184 +229,201 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
 
   const qr = qrState.url === url ? qrState.data : "";
   const mode = MODES.find((m) => m.id === form.mode)!;
+  const isSaved = editingId !== null && !dirty;
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1fr_300px]">
-      <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium">Mode</legend>
-          <div className="grid grid-cols-3 gap-2" role="radiogroup">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={form.mode === m.id}
-                onClick={() => set("mode", m.id)}
-                className={`rounded-xl border px-3 py-3 text-lg font-semibold ${
-                  form.mode === m.id
-                    ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_248px]">
+      <form className="flex min-w-0 flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        <fieldset className={card}>
+          <legend className="sr-only">Mode</legend>
+          <p className="mb-2 text-xs text-muted">1. Mode</p>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Mode">
+            {MODES.map(({ id, label, Icon }) => {
+              const selected = form.mode === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => set("mode", id)}
+                  className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left text-base transition-colors ${
+                    selected ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"
+                  }`}
+                >
+                  <Icon size={20} className={selected ? "text-lime" : "text-ink"} aria-hidden="true" />
+                  {label}
+                </button>
+              );
+            })}
           </div>
-          <p className="text-sm text-zinc-500">{mode.hint}</p>
+          <p className="mt-2 text-sm text-muted">{mode.hint}</p>
         </fieldset>
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          Workout name (optional)
-          <input
-            type="text"
-            maxLength={60}
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="e.g. Fran, Cindy, Monday strength"
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-lg text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          />
-        </label>
-
-        <div className="flex flex-wrap gap-6">
-          {form.mode === "fortime" && (
-            <>
-              <NumberField label="Time cap" value={form.capMin} onChange={(n) => set("capMin", n)} max={240} suffix="min" />
-              <NumberField label="&nbsp;" value={form.capSec} onChange={(n) => set("capSec", n)} max={59} suffix="sec" />
-            </>
+        <fieldset className={card}>
+          <legend className="sr-only">Settings</legend>
+          <p className="mb-2 text-xs text-muted">2. Settings</p>
+          <label className="mb-3 flex flex-col gap-1.5 text-xs text-muted">
+            Workout name (optional)
+            <input
+              type="text"
+              maxLength={60}
+              value={form.name}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Fran, Cindy, Monday strength"
+              className={`${control} w-full`}
+            />
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {form.mode === "fortime" && (
+              <>
+                <NumberField label="Time cap" value={form.capMin} onChange={(n) => set("capMin", n)} max={240} suffix="min" />
+                <NumberField label="Cap seconds" value={form.capSec} onChange={(n) => set("capSec", n)} max={59} suffix="sec" />
+              </>
+            )}
+            {form.mode === "amrap" && (
+              <>
+                <NumberField label="Duration" value={form.durMin} onChange={(n) => set("durMin", n)} max={240} suffix="min" />
+                <NumberField label="Duration seconds" value={form.durSec} onChange={(n) => set("durSec", n)} max={59} suffix="sec" />
+              </>
+            )}
+            {form.mode === "emom" && (
+              <>
+                <NumberField label="Every" value={form.intMin} onChange={(n) => set("intMin", n)} max={60} suffix="min" />
+                <NumberField label="Every seconds" value={form.intSec} onChange={(n) => set("intSec", n)} max={59} suffix="sec" />
+                <NumberField label="For" value={form.rounds} onChange={(n) => set("rounds", n)} max={200} suffix="rounds" />
+              </>
+            )}
+            <NumberField
+              label="Get ready"
+              value={form.countdownSec}
+              onChange={(n) => set("countdownSec", n)}
+              max={60}
+              suffix="sec"
+            />
+          </div>
+          {errors.length > 0 && (
+            <ul className="mt-3 list-disc pl-5 text-sm text-alert" role="alert">
+              {errors.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
           )}
-          {form.mode === "amrap" && (
-            <>
-              <NumberField label="Duration" value={form.durMin} onChange={(n) => set("durMin", n)} max={240} suffix="min" />
-              <NumberField label="&nbsp;" value={form.durSec} onChange={(n) => set("durSec", n)} max={59} suffix="sec" />
-            </>
-          )}
-          {form.mode === "emom" && (
-            <>
-              <NumberField label="Every" value={form.intMin} onChange={(n) => set("intMin", n)} max={60} suffix="min" />
-              <NumberField label="&nbsp;" value={form.intSec} onChange={(n) => set("intSec", n)} max={59} suffix="sec" />
-              <NumberField label="For" value={form.rounds} onChange={(n) => set("rounds", n)} max={200} suffix="rounds" />
-            </>
-          )}
-          <NumberField
-            label="Get-ready countdown"
-            value={form.countdownSec}
-            onChange={(n) => set("countdownSec", n)}
-            max={60}
-            suffix="sec"
-          />
-        </div>
+        </fieldset>
 
-        {errors.length > 0 && (
-          <ul className="list-disc pl-5 text-sm text-red-600" role="alert">
-            {errors.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        )}
-      </form>
-
-      <aside className="flex flex-col gap-3 rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-        <div>
-          <p className="truncate text-xl font-semibold">{config.name || "Untitled workout"}</p>
-          <p className="text-zinc-600 dark:text-zinc-400">{valid ? describeConfig(config) : "Fix the errors to continue"}</p>
-        </div>
-
-        {valid && qr && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={qr}
-            alt="QR code for the timer link"
-            // Shrinks on short screens so the page still fits without scrolling.
-            style={{ width: "min(180px, 26vh)", height: "auto", aspectRatio: "1" }}
-            className="self-center rounded-lg bg-white"
-          />
-        )}
-
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={save}
-            disabled={!valid || saving || (editingId !== null && !dirty)}
-            className="rounded-xl bg-zinc-900 px-4 py-2.5 text-lg font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            disabled={!valid || saving || isSaved}
+            className="flex h-11 items-center gap-2 rounded-lg bg-ink px-5 text-base font-medium text-white hover:bg-black disabled:opacity-50"
           >
-            {saving ? "Saving…" : editingId ? (dirty ? "Update saved workout" : "Saved ✓") : "Save workout"}
+            {isSaved ? <IconCheck size={20} aria-hidden="true" /> : <IconDeviceFloppy size={20} aria-hidden="true" />}
+            {saving ? "Saving…" : editingId ? (dirty ? "Update saved workout" : "Saved") : "Save workout"}
           </button>
-          {saveError && (
-            <p role="alert" className="text-sm text-red-600">
-              {saveError}
-            </p>
-          )}
-          {editingId && (
-            <button type="button" onClick={startNew} className="text-sm underline">
-              Start a new workout
-            </button>
-          )}
-          <div className="grid grid-cols-2 gap-2">
           <a
             href={valid ? path : undefined}
             target="_blank"
             rel="noopener"
             aria-disabled={!valid}
-            className={`rounded-xl px-3 py-2.5 text-center font-semibold text-white ${
-              valid ? "bg-emerald-600 hover:bg-emerald-700" : "pointer-events-none bg-zinc-400"
+            className={`flex h-11 items-center gap-2 rounded-lg border border-ink px-4 text-base hover:bg-white ${
+              valid ? "" : "pointer-events-none opacity-40"
             }`}
           >
+            <IconExternalLink size={20} aria-hidden="true" />
             Open timer
           </a>
           <button
             type="button"
             onClick={copy}
             disabled={!valid}
-            className="rounded-xl border border-zinc-300 px-3 py-2.5 font-medium hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            className="flex h-11 items-center gap-2 rounded-lg border border-ink px-4 text-base hover:bg-white disabled:opacity-40"
           >
-            {copied ? "Copied!" : "Copy link"}
+            {copied ? <IconCheck size={20} aria-hidden="true" /> : <IconCopy size={20} aria-hidden="true" />}
+            {copied ? "Copied" : "Copy link"}
           </button>
-          </div>
-          {editingId && !dirty ? (
-            <p className="text-center text-sm text-zinc-500">
-              Code: <span className="font-mono text-base font-semibold text-zinc-800 dark:text-zinc-200">{formatCode(editingId)}</span>
+          {editingId && (
+            <button type="button" onClick={startNew} className="px-2 text-sm underline">
+              Start a new workout
+            </button>
+          )}
+        </div>
+        {saveError && (
+          <p role="alert" className="text-sm text-alert">
+            {saveError}
+          </p>
+        )}
+      </form>
+
+      <aside className="flex flex-row items-start gap-3 lg:flex-col lg:items-center" aria-label="Preview and QR code">
+        <PhonePreview config={config} valid={valid} />
+        <div className={`${card} flex w-full flex-col items-center gap-2 p-3`}>
+          {valid && qr ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qr} alt="QR code for the timer link" width={104} height={104} className="rounded-md" />
+          ) : (
+            <div className="h-[104px] w-[104px] rounded-md bg-paper" aria-hidden="true" />
+          )}
+          {isSaved ? (
+            <p className="text-sm text-muted">
+              Code <span className="font-mono text-ink">{formatCode(editingId)}</span>
             </p>
-          ) : null}
-          <p className="text-xs text-zinc-500">Scan the QR code (or enter the code) on the phone, then tap START.</p>
+          ) : (
+            <p className="text-center text-xs text-muted">Save to get a short code. This QR works already.</p>
+          )}
         </div>
       </aside>
 
-      <section className="md:col-span-2">
+      <section id="saved" className="scroll-mt-4 lg:col-span-2">
         {saved.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Saved workouts:</span> nothing yet. Save one to
-            get a short link and QR code.
+          <p className="text-sm text-muted">
+            <span className="text-ink">Saved workouts:</span> nothing yet. Save one to get a short link and QR code.
           </p>
         ) : (
           <>
-            <h2 className="mb-2 text-lg font-semibold">Saved workouts</h2>
-            <ul className="flex flex-col gap-2">
+            <h2 className="mb-2 text-sm text-muted">Saved workouts</h2>
+            <ul className="grid gap-2 md:grid-cols-2">
               {saved.map((w) => (
                 <li
                   key={w.id}
-                  className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-                    w.id === editingId ? "border-emerald-600" : "border-zinc-200 dark:border-zinc-800"
+                  className={`flex flex-col gap-2 rounded-xl border bg-white p-3 ${
+                    w.id === editingId ? "border-ink" : "border-line"
                   }`}
                 >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
-                    <p className="text-sm text-zinc-500">
-                      {describeConfig(w.config)} · code <span className="font-mono">{formatCode(w.id)}</span> · by {w.creator}
-                    </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display truncate text-2xl leading-none">{w.config.name || "Untitled workout"}</p>
+                    <span className="shrink-0 rounded-md bg-paper px-2 py-0.5 text-xs">
+                      {w.config.mode === "fortime" ? "For time" : w.config.mode === "amrap" ? "AMRAP" : "EMOM"}
+                    </span>
                   </div>
-                  <div className="flex gap-2 text-sm">
-                    <button type="button" onClick={() => load(w)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                      Edit
+                  <p className="text-sm text-muted">
+                    {describeConfig(w.config)} · by {w.creator} · <span className="font-mono">{formatCode(w.id)}</span>
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button type="button" onClick={() => load(w)} aria-label="Edit" title="Edit" className={iconButton}>
+                      <IconPencil size={18} aria-hidden="true" />
                     </button>
-                    <button type="button" onClick={() => copyLink(w.id)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                      {copiedId === w.id ? "Copied!" : "Copy link"}
+                    <button type="button" onClick={() => copyLink(w.id)} aria-label="Copy link" title="Copy link" className={iconButton}>
+                      {copiedId === w.id ? <IconCheck size={18} aria-hidden="true" /> : <IconCopy size={18} aria-hidden="true" />}
                     </button>
-                    <a href={`/t?w=${w.id}`} target="_blank" rel="noopener" className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
-                      Open
+                    <a
+                      href={`/t?w=${w.id}`}
+                      target="_blank"
+                      rel="noopener"
+                      aria-label="Open timer"
+                      title="Open timer"
+                      className={iconButton}
+                    >
+                      <IconExternalLink size={18} aria-hidden="true" />
                     </a>
-                    <button type="button" onClick={() => remove(w)} className="rounded-lg border border-red-300 px-3 py-2 text-red-700 dark:border-red-900 dark:text-red-300">
-                      Delete
+                    <button
+                      type="button"
+                      onClick={() => remove(w)}
+                      aria-label="Delete"
+                      title="Delete"
+                      className={`${iconButton} ml-auto text-alert hover:border-alert`}
+                    >
+                      <IconTrash size={18} aria-hidden="true" />
                     </button>
                   </div>
                 </li>

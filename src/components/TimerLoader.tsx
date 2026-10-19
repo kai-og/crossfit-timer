@@ -14,6 +14,7 @@ import { decodeConfig, describeConfig, encodeConfig, parseConfig } from "@/lib/t
 import type { WorkoutConfig } from "@/lib/timer/types";
 import { InstallHint } from "./InstallHint";
 import { JoinWorkout } from "./JoinWorkout";
+import { usePagePaint } from "@/lib/usePagePaint";
 import { TimerScreen } from "./TimerScreen";
 
 /** How long to wait for the server before falling back to the copy saved on this phone (gym Wi-Fi is bad). */
@@ -73,33 +74,36 @@ function SavedWorkout({ id }: { id: string }) {
     };
   }, [id]);
 
-  if (!result) return <main className="fixed inset-0 flex items-center justify-center bg-zinc-950 text-white/60">Loading workout…</main>;
+  if (!result) return <main className="fixed inset-0 flex items-center justify-center bg-night text-white/60">Loading workout…</main>;
   if (result.status === "ok") return <TimerScreen config={result.config} creator={result.creator} />;
   return <WorkoutPicker message={result.status === "missing" ? "missing" : "unavailable"} />;
 }
 
-const MESSAGES = {
-  pick: ["Start a workout", "Pick a saved workout, scan the coach's QR code, or enter its code. Workouts you have opened work without a connection."],
-  invalid: ["Workout not found", "This timer link is invalid or incomplete. Pick a workout below, or scan or enter a new code."],
-  missing: ["Workout not found", "The coach may have deleted this workout. Pick another below, or scan or enter a new code."],
-  unavailable: ["Can't load this workout", "No connection, and this workout has not been opened on this phone before. Connect once to load it, or pick another below."],
-} as const;
+const NOTICES: Record<"invalid" | "missing" | "unavailable", string> = {
+  invalid: "This timer link is invalid or incomplete. Pick a workout below, or scan or enter a new code.",
+  missing: "That workout was not found. The coach may have deleted it. Pick another below, or scan a new code.",
+  unavailable:
+    "No connection, and this workout has not been opened on this phone before. Connect once to load it, or pick another below.",
+};
 
 type Entry = { key: string; href: string; config: WorkoutConfig; creator?: string };
 
 function WorkoutList({ title, entries }: { title: string; entries: Entry[] }) {
   if (entries.length === 0) return null;
   return (
-    <section className="flex w-full max-w-sm flex-col gap-3 text-left">
-      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide opacity-60">{title}</h2>
-      <ul className="flex flex-col gap-3">
+    <section className="flex flex-col gap-2.5">
+      <h2 className="mt-2 text-sm text-white/55">{title}</h2>
+      <ul className="flex flex-col gap-2.5">
         {entries.map((e) => (
           <li key={e.key}>
             {/* Plain anchor on purpose: a full page load is answered by the service worker, a client-side
                 <Link> navigation would ask the server for data and fail offline. */}
-            <a href={e.href} className="block rounded-2xl bg-zinc-800 px-5 py-4 active:bg-zinc-700">
-              <span className="block text-xl font-semibold">{e.config.name || describeConfig(e.config)}</span>
-              <span className="block text-sm opacity-70">
+            <a
+              href={e.href}
+              className="block rounded-l-sm rounded-r-xl border-l-4 border-lime bg-[#1a1c21] px-4 py-3 active:bg-[#23262c]"
+            >
+              <span className="font-display block text-2xl leading-tight">{e.config.name || describeConfig(e.config)}</span>
+              <span className="block text-sm text-white/60">
                 {describeConfig(e.config)}
                 {e.creator ? ` · by ${e.creator}` : ""}
               </span>
@@ -111,8 +115,8 @@ function WorkoutList({ title, entries }: { title: string; entries: Entry[] }) {
   );
 }
 
-function WorkoutPicker({ message }: { message: keyof typeof MESSAGES }) {
-  const [title, body] = MESSAGES[message];
+function WorkoutPicker({ message }: { message: "pick" | keyof typeof NOTICES }) {
+  usePagePaint("#101114");
 
   const libraryRaw = useSyncExternalStore(subscribeLibrary, readLibraryRaw, () => "[]");
   const library = useMemo(() => parseLibrary(libraryRaw), [libraryRaw]);
@@ -142,24 +146,30 @@ function WorkoutPicker({ message }: { message: keyof typeof MESSAGES }) {
     });
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-6 bg-zinc-950 p-6 pt-16 text-center text-white">
-      <h1 className="text-3xl font-bold">{title}</h1>
-      <p className="max-w-sm opacity-70">{body}</p>
-      <InstallHint className="w-full max-w-sm" />
+    <main className="flex min-h-dvh flex-col bg-night text-white">
+      <div className="flex flex-1 flex-col gap-4 px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-6">
+        <h1 className="font-display mt-4 text-5xl leading-none">Workouts</h1>
+        {message !== "pick" && (
+          <p role="alert" className="rounded-xl border border-white/20 px-4 py-3 text-sm text-white/80">
+            {NOTICES[message]}
+          </p>
+        )}
+        <InstallHint />
+        <WorkoutList title="Saved workouts" entries={savedEntries} />
+        {savedEntries.length === 0 && fresh === undefined && <p className="text-sm text-white/55">Loading saved workouts…</p>}
+        {savedEntries.length === 0 && fresh === true && (
+          <p className="text-sm text-white/55">No saved workouts yet. Scan a coach&apos;s QR code or enter its code below.</p>
+        )}
+        {fresh === false && (
+          <p className="text-sm text-white/55">
+            {savedEntries.length > 0
+              ? "Offline: showing the list from your last visit."
+              : "Could not load saved workouts. Check your connection."}
+          </p>
+        )}
+        <WorkoutList title="Recent on this phone" entries={recentEntries} />
+      </div>
       <JoinWorkout />
-      <WorkoutList title="Saved workouts" entries={savedEntries} />
-      {savedEntries.length === 0 && fresh === undefined && <p className="text-sm opacity-60">Loading saved workouts…</p>}
-      {savedEntries.length === 0 && fresh === true && (
-        <p className="text-sm opacity-60">No saved workouts yet. Ask a coach to save one.</p>
-      )}
-      {fresh === false && (
-        <p className="max-w-sm text-sm opacity-60">
-          {savedEntries.length > 0
-            ? "Offline: showing the list from your last visit."
-            : "Could not load saved workouts. Check your connection."}
-        </p>
-      )}
-      <WorkoutList title="Recent on this phone" entries={recentEntries} />
     </main>
   );
 }

@@ -9,6 +9,10 @@ A workout timer for a CrossFit box. Coaches set up workouts on a computer; the t
 - **Offline:** once a phone has opened the timer, it works with no signal (service worker caches the app; opened workouts are remembered on the phone).
 - **Access:** only `@yaqbot.com` Google accounts can configure and save workouts.
 
+## Look and feel
+
+"Scoreboard" style: Barlow / Barlow Condensed type, a near-black, lime and red palette on the phone (dark while working, lime for get-ready, red for the last 10 seconds, paper when done), and a light paper layout with a dark sidebar for coaches. Icons are [Tabler Icons](https://tabler.io/icons) (MIT) via `@tabler/icons-react`; there are no emojis.
+
 ## Stack
 
 Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postgres + Drizzle · Vitest · deployed on Vercel.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { AuthCard } from "@/components/AuthCard";
 import { getCoachName, saveCoachName } from "@/lib/coach";
 import { NAME_MAX } from "@/lib/displayName";
 import { getCoachEmail } from "@/lib/session";
@@ -9,11 +10,9 @@ export const metadata: Metadata = { title: "Welcome, coach" };
 
 export default function WelcomePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-5 py-16">
-      <Suspense fallback={<p className="text-center text-zinc-500">Loading…</p>}>
-        <WelcomeForm searchParams={searchParams} />
-      </Suspense>
-    </main>
+    <Suspense fallback={<p className="p-8 text-center text-muted">Loading…</p>}>
+      <WelcomeForm searchParams={searchParams} />
+    </Suspense>
   );
 }
 
@@ -31,20 +30,17 @@ async function WelcomeForm({ searchParams }: { searchParams: Promise<{ error?: s
   }
 
   return (
-    <>
-      <div className="text-center">
-        <h1 className="mb-2 text-3xl font-bold">{current ? "Change your name" : "Welcome, coach"}</h1>
-        <p className="text-zinc-500">
-          This name is shown as the creator of your workouts, on the coach page and on athletes&apos; phones.
-        </p>
-      </div>
+    <AuthCard
+      title={current ? "Change your name" : "Welcome, coach"}
+      intro="This name is shown as the creator of your workouts, on the coach page and on athletes' phones."
+    >
       {error && (
-        <p role="alert" className="rounded-xl bg-red-100 px-4 py-3 text-red-800 dark:bg-red-950 dark:text-red-200">
+        <p role="alert" className="rounded-lg border border-alert px-4 py-3 text-sm text-alert">
           Enter a name between 1 and {NAME_MAX} characters.
         </p>
       )}
       <form action={save} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex flex-col gap-1.5 text-sm text-muted">
           Your name
           <input
             name="name"
@@ -54,14 +50,14 @@ async function WelcomeForm({ searchParams }: { searchParams: Promise<{ error?: s
             defaultValue={current ?? ""}
             autoComplete="name"
             autoFocus
-            placeholder="e.g. Sebastián"
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-3 text-lg text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            placeholder="Sebastián"
+            className="rounded-lg border border-line bg-white px-3 py-3 text-lg text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-lime"
           />
         </label>
-        <p className="text-xs text-zinc-500">Signed in as {email}. Your email is never shown to athletes.</p>
+        <p className="text-xs text-muted">Signed in as {email}. Your email is never shown to athletes.</p>
         <button
           type="submit"
-          className="rounded-xl bg-emerald-600 px-5 py-3 text-lg font-semibold text-white hover:bg-emerald-700"
+          className="h-12 rounded-lg bg-ink text-lg font-medium text-white hover:bg-black"
         >
           {current ? "Save name" : "Continue"}
         </button>
@@ -71,6 +67,6 @@ async function WelcomeForm({ searchParams }: { searchParams: Promise<{ error?: s
           </a>
         )}
       </form>
-    </>
+    </AuthCard>
   );
 }

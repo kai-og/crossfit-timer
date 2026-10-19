@@ -1,5 +1,6 @@
 "use client";
 
+import { IconX } from "@tabler/icons-react";
 import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
 
@@ -86,26 +87,33 @@ export function QrScanner({ onText, onClose }: { onText: (text: string) => boole
     <div role="dialog" aria-label="Scan QR code" className="fixed inset-0 z-50 flex flex-col bg-black text-white">
       <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
 
+      <div className="relative flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),1rem)]">
+        <p className="font-display text-2xl">Scan QR code</p>
+        <button
+          onClick={onClose}
+          aria-label="Close scanner"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-black/60 active:bg-black"
+        >
+          <IconX size={22} aria-hidden="true" />
+        </button>
+      </div>
+
       <div className="pointer-events-none relative flex flex-1 items-center justify-center">
-        <div className="h-[min(70vw,60vh)] w-[min(70vw,60vh)] rounded-3xl border-4 border-white/80 shadow-[0_0_0_100vmax_rgba(0,0,0,0.45)]" />
+        <div className="h-[min(70vw,55vh)] w-[min(70vw,55vh)] rounded-3xl border-4 border-lime shadow-[0_0_0_100vmax_rgba(0,0,0,0.5)]" />
       </div>
 
       <div className="relative flex flex-col items-center gap-3 px-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-4 text-center">
         {error ? (
-          <p role="alert" className="max-w-sm rounded-xl bg-red-900/90 px-4 py-3">
+          <p role="alert" className="max-w-sm rounded-xl bg-alert px-4 py-3">
             {error}
           </p>
         ) : (
-          <p className="max-w-sm rounded-xl bg-black/60 px-4 py-2">
-            {rejected ? "That is not a timer QR code. Try the one on the coach page." : "Point the camera at the QR code on the coach page."}
+          <p className="max-w-sm rounded-xl bg-black/65 px-4 py-2.5">
+            {rejected
+              ? "That is not a timer QR code. Try the one on the coach page."
+              : "Point the camera at the QR code on the coach page."}
           </p>
         )}
-        <button
-          onClick={onClose}
-          className="rounded-2xl border border-white/30 bg-black/70 px-8 py-3 text-xl font-semibold active:bg-black"
-        >
-          Cancel
-        </button>
       </div>
     </div>
   );

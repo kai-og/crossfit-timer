@@ -1,5 +1,6 @@
 "use client";
 
+import { IconArrowRight, IconKeyboard, IconScan } from "@tabler/icons-react";
 import { useState } from "react";
 import { findCachedWorkout } from "@/lib/library";
 import { parseWorkoutRef, refHref, type WorkoutRef } from "@/lib/workoutRef";
@@ -25,9 +26,10 @@ async function resolve(ref: WorkoutRef): Promise<Resolved> {
   return { error: "No workout found for that code. Check it and try again." };
 }
 
-/** Start a workout from inside the app: scan the coach's QR code, or type the code (or paste the link). */
+/** Bottom bar of the phone start page: scan the coach's QR code, or type the code (or paste the link). */
 export function JoinWorkout() {
   const [scanning, setScanning] = useState(false);
+  const [codeOpen, setCodeOpen] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -64,48 +66,66 @@ export function JoinWorkout() {
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-3">
-      <button
-        onClick={() => {
-          setError("");
-          setScanning(true);
-        }}
-        disabled={busy}
-        className="rounded-2xl bg-emerald-500 px-6 py-4 text-xl font-bold text-black active:bg-emerald-400 disabled:opacity-60"
-      >
-        Scan QR code
-      </button>
-
-      <form onSubmit={submit} className="flex gap-2">
-        <input
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-            setError("");
-          }}
-          placeholder="Or enter the code"
-          aria-label="Workout code"
-          autoCapitalize="none"
-          autoCorrect="off"
-          autoComplete="off"
-          spellCheck={false}
-          enterKeyHint="go"
-          className="min-w-0 flex-1 rounded-2xl border border-white/25 bg-black/40 px-4 py-3 text-lg text-white placeholder:text-white/50"
-        />
-        <button
-          type="submit"
-          disabled={busy || !code.trim()}
-          className="rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-lg font-semibold disabled:opacity-50"
-        >
-          Go
-        </button>
-      </form>
-
+    <div className="sticky bottom-0 border-t border-white/10 bg-night/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] backdrop-blur">
       {error && (
-        <p role="alert" className="rounded-xl bg-red-900/80 px-4 py-3 text-left text-sm">
+        <p role="alert" className="mb-3 rounded-xl border border-white/20 px-4 py-2.5 text-sm text-white/85">
           {error}
         </p>
       )}
+
+      {codeOpen && (
+        <form onSubmit={submit} className="mb-3 flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              setError("");
+            }}
+            placeholder="Workout code"
+            aria-label="Workout code"
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            className="min-w-0 flex-1 rounded-xl border border-white/30 bg-transparent px-4 py-3 text-xl text-white placeholder:text-white/40 focus:border-lime focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={busy || !code.trim()}
+            aria-label="Open workout"
+            className="flex w-14 items-center justify-center rounded-xl bg-lime text-ink disabled:opacity-40"
+          >
+            <IconArrowRight size={24} aria-hidden="true" />
+          </button>
+        </form>
+      )}
+
+      <div className="flex gap-2.5">
+        <button
+          onClick={() => {
+            setError("");
+            setScanning(true);
+          }}
+          disabled={busy}
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-lime text-lg font-medium text-ink active:brightness-90 disabled:opacity-60"
+        >
+          <IconScan size={22} aria-hidden="true" />
+          Scan QR code
+        </button>
+        <button
+          onClick={() => {
+            setError("");
+            setCodeOpen((o) => !o);
+          }}
+          aria-expanded={codeOpen}
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-white/30 text-lg text-white active:bg-white/10"
+        >
+          <IconKeyboard size={22} aria-hidden="true" />
+          Enter code
+        </button>
+      </div>
 
       {scanning && <QrScanner onText={onScanned} onClose={() => setScanning(false)} />}
     </div>

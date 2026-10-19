@@ -142,3 +142,15 @@ export function cuesBetween(segments: Segment[], fromMs: number, toMs: number): 
 
   return cues.filter((c) => c.atMs <= total).sort((a, b) => a.atMs - b.atMs);
 }
+
+/** What the big clock shows before the workout starts. */
+export function startClock(config: WorkoutConfig): string {
+  switch (config.mode) {
+    case "fortime":
+      return formatClock(0, true);
+    case "amrap":
+      return formatClock(config.durationSec * 1000, false);
+    case "emom":
+      return formatClock(config.intervalSec * 1000, false);
+  }
+}
