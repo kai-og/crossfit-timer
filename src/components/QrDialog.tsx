@@ -21,7 +21,7 @@ interface Props {
 export function QrDialog({ open, title, id, url, onClose }: Props) {
   const [qr, setQr] = useState({ url: "", data: "" });
   const [copied, setCopied] = useState(false);
-  usePageDim(open, 0.6);
+  usePageDim(open, 0.6, false);
 
   useEffect(() => {
     if (!open) return;

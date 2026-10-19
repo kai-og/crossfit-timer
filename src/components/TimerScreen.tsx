@@ -18,6 +18,7 @@ import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState, startClock } from "@/lib/timer/engine";
 import { describeConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
+import { setTimerBusy } from "@/lib/activity";
 import { useStandalone } from "@/lib/useInstall";
 import { usePagePaint } from "@/lib/usePagePaint";
 import { useWakeLock } from "@/lib/useWakeLock";
@@ -81,6 +82,13 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
   }, [muted]);
 
   const wakeLock = useWakeLock(status === "running" || status === "paused");
+
+  // Tell background tasks (such as the app updating itself) not to interrupt a workout in progress.
+  const workoutInProgress = status === "running" || status === "paused";
+  useEffect(() => {
+    setTimerBusy(workoutInProgress);
+    return () => setTimerBusy(false);
+  }, [workoutInProgress]);
 
   const tick = useCallback(() => {
     const now = baseMs.current + (performance.now() - startedAt.current);

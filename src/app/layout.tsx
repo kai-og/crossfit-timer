@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import { RegisterSW } from "@/components/RegisterSW";
+import { UpdateWatcher } from "@/components/UpdateWatcher";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {children}
         <RegisterSW />
+        <UpdateWatcher />
       </body>
     </html>
   );

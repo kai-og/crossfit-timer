@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Lets the running app know which version it is (see UpdateWatcher). Vercel sets the commit; locally it is "dev".
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev" },
   cacheComponents: true,
   partialPrefetching: true,
   async redirects() {

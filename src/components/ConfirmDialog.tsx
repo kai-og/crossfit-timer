@@ -31,7 +31,7 @@ export function ConfirmDialog({
   onCancel,
 }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null);
-  usePageDim(open, 0.6);
+  usePageDim(open, 0.6, tone === "dark");
 
   useEffect(() => {
     if (!open) return;
