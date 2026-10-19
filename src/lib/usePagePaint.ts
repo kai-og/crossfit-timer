@@ -30,3 +30,20 @@ export function usePagePaint(color: string, restore = "#101114") {
     };
   }, [color, restore]);
 }
+
+/**
+ * Dim the page itself, not only our overlay. On iPhone the strip along the bottom edge (the home-indicator area) can
+ * sit outside every `fixed` layer, so an overlay never reaches it and the page colour shows through undimmed. The
+ * root background does cover it, so a translucent black layer on the root gives the same dimming there.
+ */
+export function usePageDim(active: boolean, alpha = 0.6) {
+  useEffect(() => {
+    if (!active) return;
+    const html = document.documentElement;
+    const previous = html.style.backgroundImage;
+    html.style.backgroundImage = `linear-gradient(rgba(0,0,0,${alpha}),rgba(0,0,0,${alpha}))`;
+    return () => {
+      html.style.backgroundImage = previous;
+    };
+  }, [active, alpha]);
+}

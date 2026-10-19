@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { usePageDim } from "@/lib/usePagePaint";
 
 interface Props {
   open: boolean;
@@ -30,6 +31,7 @@ export function ConfirmDialog({
   onCancel,
 }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  usePageDim(open, 0.6);
 
   useEffect(() => {
     if (!open) return;

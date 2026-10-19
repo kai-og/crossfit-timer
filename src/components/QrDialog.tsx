@@ -4,6 +4,7 @@ import { IconCheck, IconCopy, IconX } from "@tabler/icons-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePageDim } from "@/lib/usePagePaint";
 import { formatCode } from "@/lib/workoutRef";
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
 export function QrDialog({ open, title, id, url, onClose }: Props) {
   const [qr, setQr] = useState({ url: "", data: "" });
   const [copied, setCopied] = useState(false);
+  usePageDim(open, 0.6);
 
   useEffect(() => {
     if (!open) return;

@@ -4,6 +4,7 @@ import { IconX } from "@tabler/icons-react";
 import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePageDim } from "@/lib/usePagePaint";
 
 const SCAN_INTERVAL_MS = 150;
 const MAX_FRAME_WIDTH = 640;
@@ -17,6 +18,7 @@ export function QrScanner({ onText, onClose }: { onText: (text: string) => boole
   const onTextRef = useRef(onText);
   const [error, setError] = useState("");
   const [rejected, setRejected] = useState(false);
+  usePageDim(true, 1);
 
   useEffect(() => {
     onTextRef.current = onText;
