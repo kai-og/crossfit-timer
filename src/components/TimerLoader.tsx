@@ -6,6 +6,7 @@ import { findRecentById, parseRecent, readRecentRaw, rememberWorkout, subscribeR
 import { decodeConfig, describeConfig, encodeConfig, parseConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
 import { InstallHint } from "./InstallHint";
+import { JoinWorkout } from "./JoinWorkout";
 import { TimerScreen } from "./TimerScreen";
 
 /** How long to wait for the server before falling back to the copy saved on this phone (gym Wi-Fi is bad). */
@@ -69,9 +70,9 @@ function SavedWorkout({ id }: { id: string }) {
 }
 
 const MESSAGES = {
-  pick: ["Pick a workout", "Scan the QR code from the coach page, or reopen a workout you used before. These work without a connection."],
-  invalid: ["Workout not found", "This timer link is invalid or incomplete. Ask your coach for a new one, or pick a recent workout below."],
-  missing: ["Workout not found", "The coach may have deleted this workout. Ask for a new link, or pick a recent workout below."],
+  pick: ["Start a workout", "Scan the coach's QR code or enter its code. Workouts you have opened before are listed below and work without a connection."],
+  invalid: ["Workout not found", "This timer link is invalid or incomplete. Scan or enter a new code, or pick a recent workout below."],
+  missing: ["Workout not found", "The coach may have deleted this workout. Scan or enter a new code, or pick a recent workout below."],
   unavailable: ["Can't load this workout", "No connection, and this workout has not been opened on this phone before. Connect once to load it, or pick a recent workout below."],
 } as const;
 
@@ -85,6 +86,12 @@ function WorkoutPicker({ message }: { message: keyof typeof MESSAGES }) {
       <h1 className="text-3xl font-bold">{title}</h1>
       <p className="max-w-sm opacity-70">{body}</p>
       <InstallHint className="w-full max-w-sm" />
+      <JoinWorkout />
+      {recent.length > 0 && (
+        <h2 className="-mb-2 mt-2 w-full max-w-sm text-left text-sm font-semibold uppercase tracking-wide opacity-60">
+          Recent workouts
+        </h2>
+      )}
       {recent.length > 0 && (
         <ul className="flex w-full max-w-sm flex-col gap-3">
           {recent.map((r) => {

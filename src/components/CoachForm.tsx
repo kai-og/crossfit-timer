@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { validateConfig } from "@/lib/timer/engine";
 import { describeConfig, encodeConfig } from "@/lib/timer/share";
+import { formatCode } from "@/lib/workoutRef";
 import type { Mode, WorkoutConfig } from "@/lib/timer/types";
 
 const MODES: { id: Mode; label: string; hint: string }[] = [
@@ -331,7 +332,12 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
             {copied ? "Copied!" : "Copy link"}
           </button>
           </div>
-          <p className="text-xs text-zinc-500">Scan the QR code with the phone on the rig, then tap START.</p>
+          {editingId && !dirty ? (
+            <p className="text-center text-sm text-zinc-500">
+              Code: <span className="font-mono text-base font-semibold text-zinc-800 dark:text-zinc-200">{formatCode(editingId)}</span>
+            </p>
+          ) : null}
+          <p className="text-xs text-zinc-500">Scan the QR code (or enter the code) on the phone, then tap START.</p>
         </div>
       </aside>
 
@@ -355,7 +361,7 @@ export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
                     <p className="text-sm text-zinc-500">
-                      {describeConfig(w.config)} · {w.createdBy}
+                      {describeConfig(w.config)} · code <span className="font-mono">{formatCode(w.id)}</span> · {w.createdBy}
                     </p>
                   </div>
                   <div className="flex gap-2 text-sm">

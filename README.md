@@ -18,6 +18,7 @@ Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postg
 - Cues are handed to the Web Audio clock ahead of time, so they stay accurate even if JavaScript timers are throttled.
 - `public/sw.js` — service worker: network-first for the `/t` shell with cached fallback, cache-first for hashed assets.
 - `src/auth.ts` — Google sign-in; the `signIn` callback only lets through Google-verified `@yaqbot.com` emails. Coach pages and write APIs also check the session themselves; `src/proxy.ts` adds a redirect in front.
+- Workout codes are 10 characters without look-alikes (no `0/o`, `1/l/i`), shown on the coach page as `abcde-fghjk` next to the QR code.
 - `GET /api/workouts/[id]` is public (the phone needs it) and exposes only the workout config, addressed by an unguessable 10-character id.
 
 ## Run locally
@@ -58,7 +59,7 @@ pnpm build && pnpm start   # the service worker only registers in production bui
 The phone should run the timer as an installed app (full screen, no browser bars, opens offline).
 
 - **Android / Chrome:** the timer page shows an **Install** button. The manifest asks for full-screen display, for links to open in the installed app (`handle_links`) and for an already-open app window to be reused (`launch_handler`). Once installed, Chrome offers to open timer links in the app.
-- **iPhone / iPad:** Apple has no install prompt and does not open links in an installed web app, so the timer page shows the *Share → Add to Home Screen* steps. Open the timer from the home screen icon; it lists recently used workouts, which also work offline.
+- **iPhone / iPad:** Apple has no install prompt and does not open links in an installed web app (the Camera app sends a scanned QR code to Safari), so the timer page shows the *Share → Add to Home Screen* steps. Inside the installed app the start page has a **Scan QR code** button (camera + [jsQR](https://github.com/cozmo/jsQR), no server involved) and a field for the workout **code** (or a pasted link). It also lists recently used workouts, which work offline.
 
 ## Testing sign-in without a @yaqbot.com account
 
