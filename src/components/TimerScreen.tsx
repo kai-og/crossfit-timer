@@ -13,7 +13,6 @@ import {
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { DebugPanel } from "@/components/DebugPanel";
 import { InstallHint } from "@/components/InstallHint";
 import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState, startClock } from "@/lib/timer/engine";
@@ -72,8 +71,6 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
 
   const installed = useStandalone();
   const [confirmReset, setConfirmReset] = useState(false);
-  const [debug, setDebug] = useState(false);
-  const titleTaps = useRef<number[]>([]);
 
   const player = useRef<CuePlayer | null>(null);
   const baseMs = useRef(0); // elapsed before the current run began
@@ -168,16 +165,6 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
     setStatus("finished");
   };
 
-  // Five quick taps on the workout name open the hidden diagnostics panel.
-  const onTitleTap = () => {
-    const now = Date.now();
-    titleTaps.current = [...titleTaps.current.filter((t) => now - t < 2000), now];
-    if (titleTaps.current.length >= 5) {
-      titleTaps.current = [];
-      setDebug(true);
-    }
-  };
-
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen?.().catch(() => {});
@@ -264,9 +251,7 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
         )}
         {atRest && (
           <>
-            <p className="timer-title font-display" onClick={onTitleTap}>
-              {config.name || describeConfig(config)}
-            </p>
+            <p className="timer-title font-display">{config.name || describeConfig(config)}</p>
             <p className="timer-meta">
               {describeConfig(config)}
               {creator ? ` · by ${creator}` : ""}
@@ -347,8 +332,6 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
           )}
         </div>
       </footer>
-
-      {debug && <DebugPanel onClose={() => setDebug(false)} />}
 
       <ConfirmDialog
         open={confirmReset}

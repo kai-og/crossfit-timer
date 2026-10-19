@@ -4,7 +4,6 @@ import { IconArrowRight, IconKeyboard, IconScan } from "@tabler/icons-react";
 import { useState } from "react";
 import { findCachedWorkout } from "@/lib/library";
 import { parseWorkoutRef, refHref, type WorkoutRef } from "@/lib/workoutRef";
-import { DebugPanel } from "./DebugPanel";
 import { QrScanner } from "./QrScanner";
 
 type Resolved = { href: string } | { error: string };
@@ -34,7 +33,6 @@ export function JoinWorkout() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [debug, setDebug] = useState(false);
 
   const open = async (ref: WorkoutRef) => {
     setBusy(true);
@@ -59,10 +57,6 @@ export function JoinWorkout() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim().toLowerCase() === "debug") {
-      setDebug(true);
-      return;
-    }
     const ref = parseWorkoutRef(code);
     if (!ref) {
       setError("That does not look like a workout code. It has 4 letters and numbers.");
@@ -134,7 +128,6 @@ export function JoinWorkout() {
       </div>
 
       {scanning && <QrScanner onText={onScanned} onClose={() => setScanning(false)} />}
-      {debug && <DebugPanel onClose={() => setDebug(false)} />}
     </div>
   );
 }
