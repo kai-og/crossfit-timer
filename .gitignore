@@ -42,3 +42,4 @@ next-env.d.ts
 
 # client brief (not part of the repo)
 /yaqbot-internship-take-home-brief.pdf
+.claude/
