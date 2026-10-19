@@ -1,6 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { validateConfig } from "@/lib/timer/engine";
 import { describeConfig, encodeConfig } from "@/lib/timer/share";
@@ -50,6 +51,24 @@ function toConfig(f: Form): WorkoutConfig {
   }
 }
 
+export interface SavedWorkout {
+  id: string;
+  config: WorkoutConfig;
+  createdBy: string;
+}
+
+function fromConfig(c: WorkoutConfig): Form {
+  const f: Form = { ...INITIAL, mode: c.mode, name: c.name, countdownSec: c.countdownSec };
+  switch (c.mode) {
+    case "fortime":
+      return { ...f, capMin: Math.floor(c.capSec / 60), capSec: c.capSec % 60 };
+    case "amrap":
+      return { ...f, durMin: Math.floor(c.durationSec / 60), durSec: c.durationSec % 60 };
+    case "emom":
+      return { ...f, intMin: Math.floor(c.intervalSec / 60), intSec: c.intervalSec % 60, rounds: c.rounds };
+  }
+}
+
 function NumberField({
   label,
   value,
@@ -82,8 +101,14 @@ function NumberField({
   );
 }
 
-export function CoachForm() {
+export function CoachForm({ saved }: { saved: SavedWorkout[] }) {
+  const router = useRouter();
   const [form, setForm] = useState<Form>(INITIAL);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [savedJson, setSavedJson] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const origin = useSyncExternalStore(
     () => () => {},
     () => window.location.origin,
@@ -97,7 +122,9 @@ export function CoachForm() {
   const config = useMemo(() => toConfig(form), [form]);
   const errors = useMemo(() => validateConfig(config), [config]);
   const valid = errors.length === 0;
-  const path = valid ? `/t?c=${encodeConfig(config)}` : "";
+  const dirty = JSON.stringify(config) !== savedJson;
+  // A saved workout gets a short link; edits not yet saved fall back to a link carrying the full config.
+  const path = !valid ? "" : editingId && !dirty ? `/t?w=${editingId}` : `/t?c=${encodeConfig(config)}`;
   const url = origin && path ? origin + path : "";
 
   useEffect(() => {
@@ -115,6 +142,57 @@ export function CoachForm() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const res = await fetch(editingId ? `/api/workouts/${editingId}` : "/api/workouts", {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      if (!res.ok) throw new Error(res.status === 401 ? "Your session expired. Sign in again." : "Could not save. Try again.");
+      const { workout } = (await res.json()) as { workout: { id: string } };
+      setEditingId(workout.id);
+      setSavedJson(JSON.stringify(config));
+      router.refresh();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Could not save. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const load = (w: SavedWorkout) => {
+    const f = fromConfig(w.config);
+    setForm(f);
+    setEditingId(w.id);
+    setSavedJson(JSON.stringify(toConfig(f)));
+    setSaveError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const startNew = () => {
+    setForm(INITIAL);
+    setEditingId(null);
+    setSavedJson("");
+    setSaveError("");
+  };
+
+  const remove = async (w: SavedWorkout) => {
+    if (!window.confirm(`Delete "${w.config.name || describeConfig(w.config)}"? Its link and QR code will stop working.`)) return;
+    const res = await fetch(`/api/workouts/${w.id}`, { method: "DELETE" });
+    if (!res.ok && res.status !== 404) return setSaveError("Could not delete. Try again.");
+    if (editingId === w.id) startNew();
+    router.refresh();
+  };
+
+  const copyLink = async (id: string) => {
+    await navigator.clipboard.writeText(`${origin}/t?w=${id}`);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const qr = qrState.url === url ? qrState.data : "";
@@ -209,6 +287,24 @@ export function CoachForm() {
         )}
 
         <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={!valid || saving || (editingId !== null && !dirty)}
+            className="rounded-xl bg-zinc-900 px-4 py-3 text-lg font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            {saving ? "Saving…" : editingId ? (dirty ? "Update saved workout" : "Saved ✓") : "Save workout"}
+          </button>
+          {saveError && (
+            <p role="alert" className="text-sm text-red-600">
+              {saveError}
+            </p>
+          )}
+          {editingId && (
+            <button type="button" onClick={startNew} className="text-sm underline">
+              Start a new workout
+            </button>
+          )}
           <a
             href={valid ? path : undefined}
             target="_blank"
@@ -231,6 +327,45 @@ export function CoachForm() {
           <p className="text-xs text-zinc-500">Scan the QR code with the phone on the rig, then tap START.</p>
         </div>
       </aside>
+
+      <section className="md:col-span-2">
+        <h2 className="mb-3 text-xl font-semibold">Saved workouts</h2>
+        {saved.length === 0 ? (
+          <p className="text-zinc-500">Nothing saved yet. Save a workout to get a short link and QR code.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {saved.map((w) => (
+              <li
+                key={w.id}
+                className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
+                  w.id === editingId ? "border-emerald-600" : "border-zinc-200 dark:border-zinc-800"
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{w.config.name || "Untitled workout"}</p>
+                  <p className="text-sm text-zinc-500">
+                    {describeConfig(w.config)} · {w.createdBy}
+                  </p>
+                </div>
+                <div className="flex gap-2 text-sm">
+                  <button type="button" onClick={() => load(w)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                    Edit
+                  </button>
+                  <button type="button" onClick={() => copyLink(w.id)} className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                    {copiedId === w.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <a href={`/t?w=${w.id}`} target="_blank" rel="noopener" className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700">
+                    Open
+                  </a>
+                  <button type="button" onClick={() => remove(w)} className="rounded-lg border border-red-300 px-3 py-2 text-red-700 dark:border-red-900 dark:text-red-300">
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

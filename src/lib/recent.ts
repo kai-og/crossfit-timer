@@ -1,8 +1,14 @@
 import { parseConfig } from "./timer/share";
 import type { WorkoutConfig } from "./timer/types";
 
-const KEY = "recent-workouts-v1";
-const MAX = 10;
+const KEY = "recent-workouts-v2";
+const MAX = 20;
+
+export interface RecentWorkout {
+  /** Set for workouts saved by a coach: reopening them fetches the latest version when online. */
+  id?: string;
+  config: WorkoutConfig;
+}
 
 /** Raw snapshot string, stable between reads so it works with useSyncExternalStore. */
 export function readRecentRaw(): string {
@@ -13,22 +19,33 @@ export function readRecentRaw(): string {
   }
 }
 
-export function parseRecent(raw: string): WorkoutConfig[] {
+export function parseRecent(raw: string): RecentWorkout[] {
   try {
     const list: unknown = JSON.parse(raw);
     if (!Array.isArray(list)) return [];
-    return list.map(parseConfig).filter((c): c is WorkoutConfig => c !== null);
+    return list.flatMap((item): RecentWorkout[] => {
+      const config = parseConfig(item?.config);
+      if (!config) return [];
+      const id = typeof item.id === "string" ? item.id : undefined;
+      return [{ id, config }];
+    });
   } catch {
     return [];
   }
 }
 
+export function findRecentById(id: string): WorkoutConfig | null {
+  return parseRecent(readRecentRaw()).find((r) => r.id === id)?.config ?? null;
+}
+
 /** Remember a workout on this phone so it can be reopened with no connection. Most recent first, de-duplicated. */
-export function rememberWorkout(config: WorkoutConfig) {
-  const key = JSON.stringify(config);
-  const rest = parseRecent(readRecentRaw()).filter((c) => JSON.stringify(c) !== key);
+export function rememberWorkout(config: WorkoutConfig, id?: string) {
+  const sameConfig = JSON.stringify(config);
+  const rest = parseRecent(readRecentRaw()).filter((r) =>
+    id ? r.id !== id : r.id !== undefined || JSON.stringify(r.config) !== sameConfig,
+  );
   try {
-    localStorage.setItem(KEY, JSON.stringify([config, ...rest].slice(0, MAX)));
+    localStorage.setItem(KEY, JSON.stringify([{ id, config }, ...rest].slice(0, MAX)));
     window.dispatchEvent(new Event("recent-workouts"));
   } catch {
     // Storage full or blocked (private mode): the timer still works, it just won't be remembered.

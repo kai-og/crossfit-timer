@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CrossFit Timer
 
-## Getting Started
+A workout timer for a CrossFit box. Coaches set up workouts on a computer; the timer runs full screen on a phone mounted near the rig.
 
-First, run the development server:
+- **Modes:** For Time (with time cap), AMRAP, EMOM. Each is configurable, plus a get-ready countdown.
+- **Desktop → phone:** a coach saves a workout and gets a short link and a QR code. The phone opens it, taps START, and is done. No login on the phone.
+- **Phone timer:** huge clock readable from a few metres, colour per phase, sound cues, screen kept awake, pause/resume.
+- **Offline:** once a phone has opened the timer, it works with no signal (service worker caches the app; opened workouts are remembered on the phone).
+- **Access:** only `@yaqbot.com` Google accounts can configure and save workouts.
+
+## Stack
+
+Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postgres + Drizzle · Vitest · deployed on Vercel.
+
+## How it works
+
+- `src/lib/timer/` — the timer engine: pure functions that turn a workout config into segments, derive state from elapsed time (so a throttled tab can never drift) and schedule sound cues. Unit-tested.
+- Cues are handed to the Web Audio clock ahead of time, so they stay accurate even if JavaScript timers are throttled.
+- `public/sw.js` — service worker: network-first for the `/t` shell with cached fallback, cache-first for hashed assets.
+- `src/auth.ts` — Google sign-in; the `signIn` callback only lets through Google-verified `@yaqbot.com` emails. Coach pages and write APIs also check the session themselves; `src/proxy.ts` adds a redirect in front.
+- `GET /api/workouts/[id]` is public (the phone needs it) and exposes only the workout config, addressed by an unguessable 10-character id.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # fill in the values, see below
+pnpm db:push                 # create the table
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+pnpm test    # timer engine, share format, auth domain rule
+pnpm lint
+pnpm build && pnpm start   # the service worker only registers in production builds
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Name | What |
+|---|---|
+| `DATABASE_URL` | Neon Postgres connection string |
+| `AUTH_SECRET` | random secret for Auth.js sessions (`openssl rand -base64 33`) |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client |
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
+1. **Vercel:** import this GitHub repo as a new project and deploy.
+2. **Neon:** in the Vercel project open *Storage → Create → Neon* (free tier). This adds `DATABASE_URL` automatically.
+3. **Google OAuth:** in Google Cloud Console create a project, then *APIs & Services → OAuth consent screen*: user type **External**, add the app name and your email, then **Publish app** (basic scopes need no verification). Under *Credentials → Create credentials → OAuth client ID → Web application* add the redirect URIs
+   `https://<your-domain>/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`.
+4. Add `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` and `AUTH_SECRET` to the Vercel project's environment variables and redeploy.
+5. Create the table once: `vercel env pull .env.local` (or copy `DATABASE_URL`), then `pnpm db:push`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Known limits
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Coaches cannot create workouts offline (only the phone timer is offline-capable).
+- iPhone: the ringer switch can mute Web Audio, and keep-awake needs iOS 16.4+.
+- Sign-in uses an email-domain check rather than a Workspace-only `hd` restriction, so it also works for accounts that are not Google Workspace users.
