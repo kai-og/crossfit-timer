@@ -12,7 +12,7 @@ export function parseWorkoutRef(input: string): WorkoutRef | null {
   if (!text) return null;
 
   // A timer link. Only the query values are used, so the origin and any extra text are ignored.
-  const saved = text.match(/[?&]w=([0-9a-zA-Z]{10})(?![0-9a-zA-Z])/);
+  const saved = text.match(/[?&]w=([0-9a-zA-Z]{10}|[0-9a-zA-Z]{4})(?![0-9a-zA-Z])/);
   if (saved) return { kind: "saved", id: saved[1] };
   const inline = text.match(/[?&]c=([A-Za-z0-9_-]+)/);
   if (inline) return decodeConfig(inline[1]) ? { kind: "inline", encoded: inline[1] } : null;
@@ -22,7 +22,7 @@ export function parseWorkoutRef(input: string): WorkoutRef | null {
   return ID_PATTERN.test(code) ? { kind: "saved", id: code } : null;
 }
 
-/** Display form of an id: two groups of five, easier to read and type. */
+/** Display form of an id: short codes as they are, long ones in two groups of five. */
 export function formatCode(id: string): string {
   return id.length === 10 ? `${id.slice(0, 5)}-${id.slice(5)}` : id;
 }

@@ -59,7 +59,7 @@ export function JoinWorkout() {
     e.preventDefault();
     const ref = parseWorkoutRef(code);
     if (!ref) {
-      setError("That does not look like a workout code. It has 10 letters and numbers.");
+      setError("That does not look like a workout code. It has 4 letters and numbers.");
       return;
     }
     void open(ref);

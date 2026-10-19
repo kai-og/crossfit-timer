@@ -32,23 +32,29 @@ describe("parseWorkoutRef", () => {
     expect(parseWorkoutRef("  k7m2p-9xq4r ")).toEqual({ kind: "saved", id: "k7m2p9xq4r" });
     expect(parseWorkoutRef("k7m2p 9xq4r")).toEqual({ kind: "saved", id: "k7m2p9xq4r" });
   });
+  it("reads 4-character codes, in links and typed", () => {
+    expect(parseWorkoutRef("https://x.app/t?w=k7m2")).toEqual({ kind: "saved", id: "k7m2" });
+    expect(parseWorkoutRef("K7M2")).toEqual({ kind: "saved", id: "K7M2" });
+    expect(parseWorkoutRef(" k7 m2 ")).toEqual({ kind: "saved", id: "k7m2" });
+  });
   it("keeps the case of older mixed-case ids", () => {
     expect(parseWorkoutRef("AbC123xyZ9")).toEqual({ kind: "saved", id: "AbC123xyZ9" });
   });
   it("rejects anything else", () => {
-    for (const bad of ["", "   ", "hello", "k7m2p9xq4", "k7m2p9xq4rr", "https://example.com", "WIFI:S:x;;"]) {
+    for (const bad of ["", "   ", "hello", "k7m", "k7m2p9xq4", "k7m2p9xq4rr", "https://example.com", "WIFI:S:x;;"]) {
       expect(parseWorkoutRef(bad)).toBeNull();
     }
   });
   it("does not take a longer run of characters for an id", () => {
     expect(parseWorkoutRef("https://x.app/t?w=k7m2p9xq4rZZ")).toBeNull();
+    expect(parseWorkoutRef("https://x.app/t?w=k7m2p")).toBeNull();
   });
 });
 
 describe("helpers", () => {
   it("formats codes in two groups", () => {
     expect(formatCode("k7m2p9xq4r")).toBe("k7m2p-9xq4r");
-    expect(formatCode("short")).toBe("short");
+    expect(formatCode("k7m2")).toBe("k7m2");
   });
   it("builds hrefs", () => {
     expect(refHref({ kind: "saved", id: "k7m2p9xq4r" })).toBe("/t?w=k7m2p9xq4r");
@@ -56,7 +62,7 @@ describe("helpers", () => {
   it("generates ids that parse back, without look-alike characters", () => {
     for (let i = 0; i < 200; i++) {
       const id = newId();
-      expect(id).toMatch(/^[2-9a-hjkmnp-z]{10}$/);
+      expect(id).toMatch(/^[2-9a-hjkmnp-z]{4}$/);
       expect(parseWorkoutRef(id)).toEqual({ kind: "saved", id });
     }
   });

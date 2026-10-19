@@ -24,6 +24,14 @@ function isIos(): boolean {
   return /iPhone|iPad|iPod/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
 }
 
+/**
+ * True when the page runs as an installed app (Android/desktop PWA, or iPhone home-screen app) rather than in a
+ * browser tab. In that case the browser's own full screen is already covered, so the Full screen button is not needed.
+ */
+export function useStandalone(): boolean {
+  return useSyncExternalStore(noopSubscribe, isStandalone, () => false);
+}
+
 export type InstallState =
   | { kind: "hidden" }
   | { kind: "prompt"; install: () => void; dismiss: () => void }

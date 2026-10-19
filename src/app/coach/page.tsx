@@ -1,45 +1,41 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { CoachForm, type SavedWorkout } from "@/components/CoachForm";
+import { CoachForm } from "@/components/CoachForm";
 import { CoachShell } from "@/components/CoachShell";
-import { getCoachName } from "@/lib/coach";
-import { getCoachEmail } from "@/lib/session";
+import { requireCoach } from "@/lib/coachPage";
+import type { SavedWorkout } from "@/lib/savedWorkout";
 import { parseConfig } from "@/lib/timer/share";
-import { listWorkouts } from "@/lib/workoutQueries";
+import { getWorkout } from "@/lib/workoutQueries";
 
 export const metadata: Metadata = { title: "Coach · Set up a workout" };
 
-export default function CoachPage() {
+export default function CoachPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   return (
     <Suspense fallback={<p className="p-8 text-muted">Loading…</p>}>
-      <CoachContent />
+      <CoachContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function CoachContent() {
-  const email = await getCoachEmail();
-  if (!email) redirect("/login");
+async function CoachContent({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
+  const { name } = await requireCoach();
+  const { edit } = await searchParams;
 
-  // New coaches choose the name shown as the creator of their workouts before anything else.
-  const name = await getCoachName(email);
-  if (!name) redirect("/welcome");
-
-  const rows = await listWorkouts();
-  const saved: SavedWorkout[] = rows.flatMap((r) => {
-    const config = parseConfig(r.config);
-    // Coaches see the email of colleagues who have not chosen a name yet.
-    return config ? [{ id: r.id, config, creator: r.creatorName ?? r.createdBy }] : [];
-  });
+  // ?edit=<code> opens a saved workout in the form.
+  let initial: SavedWorkout | undefined;
+  if (edit) {
+    const row = await getWorkout(edit);
+    const config = row && parseConfig(row.config);
+    if (row && config) initial = { id: row.id, config, creator: row.creatorName ?? "" };
+  }
 
   return (
     <CoachShell name={name}>
       <div className="mb-4">
-        <h1 className="font-display text-4xl leading-none">Set up a workout</h1>
-        <p className="mt-1 text-sm text-muted">Configure it here, then open the link on the phone next to the rig.</p>
+        <h1 className="font-display text-4xl leading-none">{initial ? "Edit workout" : "Set up a workout"}</h1>
+        <p className="mt-1 text-sm text-muted">Configure it here, then scan the QR code or enter the code on the phone.</p>
       </div>
-      <CoachForm saved={saved} />
+      <CoachForm key={initial?.id ?? "new"} initial={initial} />
     </CoachShell>
   );
 }

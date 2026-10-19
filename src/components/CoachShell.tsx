@@ -1,5 +1,6 @@
-import { IconClockBolt, IconList, IconLogout, IconPlus, IconUser } from "@tabler/icons-react";
+import { IconClockBolt, IconLogout, IconUser } from "@tabler/icons-react";
 import { signOut } from "@/auth";
+import { CoachNav } from "./CoachNav";
 
 const navItem =
   "flex items-center gap-2 rounded-lg px-2.5 py-2 text-[15px] text-white/70 hover:bg-white/10 hover:text-white";
@@ -16,16 +17,7 @@ export function CoachShell({ name, children }: { name: string; children: React.R
           <span className="font-display text-xl leading-none">WOD Timer</span>
         </div>
 
-        <nav className="hidden flex-col gap-1 md:flex" aria-label="Coach">
-          <a href="/coach" aria-current="page" className={`${navItem} bg-white/10 text-white`}>
-            <IconPlus size={18} aria-hidden="true" />
-            New workout
-          </a>
-          <a href="#saved" className={navItem}>
-            <IconList size={18} aria-hidden="true" />
-            Saved workouts
-          </a>
-        </nav>
+        <CoachNav />
 
         <div className="flex items-center gap-3 text-sm md:mt-auto md:flex-col md:items-stretch md:gap-1">
           <div className="flex items-center gap-2 md:px-1 md:pb-2">

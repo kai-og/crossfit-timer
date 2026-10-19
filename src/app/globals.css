@@ -44,6 +44,8 @@ body {
 .timer-root {
   position: fixed;
   inset: 0;
+  /* Follows the visible area as iPhone Safari's toolbars come and go, so no strip is left below. */
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--bg);

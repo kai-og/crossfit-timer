@@ -3,6 +3,7 @@
 import { IconX } from "@tabler/icons-react";
 import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const SCAN_INTERVAL_MS = 150;
 const MAX_FRAME_WIDTH = 640;
@@ -83,7 +84,8 @@ export function QrScanner({ onText, onClose }: { onText: (text: string) => boole
     };
   }, []);
 
-  return (
+  // Rendered into <body>: inside the sticky bottom bar, its backdrop blur would make `fixed` relative to the bar.
+  return createPortal(
     <div role="dialog" aria-label="Scan QR code" className="fixed inset-0 z-50 flex flex-col bg-black text-white">
       <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
 
@@ -115,6 +117,7 @@ export function QrScanner({ onText, onClose }: { onText: (text: string) => boole
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

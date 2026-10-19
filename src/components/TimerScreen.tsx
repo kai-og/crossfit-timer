@@ -12,11 +12,13 @@ import {
   IconVolumeOff,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { InstallHint } from "@/components/InstallHint";
 import { CuePlayer } from "@/lib/timer/audio";
 import { buildSegments, clockMs, cuesBetween, formatClock, getState, startClock } from "@/lib/timer/engine";
 import { describeConfig } from "@/lib/timer/share";
 import type { WorkoutConfig } from "@/lib/timer/types";
+import { useStandalone } from "@/lib/useInstall";
 import { usePagePaint } from "@/lib/usePagePaint";
 import { useWakeLock } from "@/lib/useWakeLock";
 
@@ -65,6 +67,9 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
     () => document.documentElement.requestFullscreen !== undefined,
     () => false,
   );
+
+  const installed = useStandalone();
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const player = useRef<CuePlayer | null>(null);
   const baseMs = useRef(0); // elapsed before the current run began
@@ -132,11 +137,17 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
     setStatus("running");
   };
 
-  const reset = () => {
-    if (status === "running" && !window.confirm("Reset the timer?")) return;
+  const doReset = () => {
+    setConfirmReset(false);
     baseMs.current = 0;
     setElapsed(0);
     setStatus("ready");
+  };
+
+  // A workout in progress asks first; from the start or finished screen it just resets.
+  const reset = () => {
+    if (status === "running" || status === "paused") setConfirmReset(true);
+    else doReset();
   };
 
   const finishNow = () => {
@@ -300,7 +311,7 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
             {muted ? <IconVolumeOff size={iconSize} aria-hidden="true" /> : <IconVolume size={iconSize} aria-hidden="true" />}
             {muted ? "Muted" : "Sound"}
           </button>
-          {supportsFullscreen && (
+          {supportsFullscreen && !installed && (
             <button onClick={toggleFullscreen}>
               {fullscreen ? (
                 <IconArrowsMinimize size={iconSize} aria-hidden="true" />
@@ -312,6 +323,16 @@ export function TimerScreen({ config, creator }: { config: WorkoutConfig; creato
           )}
         </div>
       </footer>
+
+      <ConfirmDialog
+        open={confirmReset}
+        title="Reset the timer?"
+        message="The workout in progress will stop and the clock goes back to the start."
+        confirmLabel="Reset"
+        danger
+        onConfirm={doReset}
+        onCancel={() => setConfirmReset(false)}
+      />
 
       {wakeLock === "unsupported" && status !== "ready" && (
         <p className="timer-notice">Screen may dim: keep-awake is not supported on this browser.</p>

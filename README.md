@@ -23,7 +23,7 @@ Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postg
 - Cues are handed to the Web Audio clock ahead of time, so they stay accurate even if JavaScript timers are throttled.
 - `public/sw.js` — service worker: network-first for the `/t` shell with cached fallback, cache-first for hashed assets.
 - `src/auth.ts` — Google sign-in; the `signIn` callback only lets through Google-verified `@yaqbot.com` emails. Coach pages and write APIs also check the session themselves; `src/proxy.ts` adds a redirect in front.
-- Workout codes are 10 characters without look-alikes (no `0/o`, `1/l/i`), shown on the coach page as `abcde-fghjk` next to the QR code.
+- Workout codes are 4 characters without look-alikes (no `0/o`, `1/l/i`), about 920,000 combinations; a new code is drawn again on the rare collision. Longer 10-character ids from earlier versions keep working. Codes are a convenience, not a secret.
 - Each coach chooses a display name on first sign-in (`/welcome`, changeable later). It is stored in the `coaches` table and shown as the creator of their workouts on the coach page and on phones. Emails are never exposed publicly.
 - `GET /api/workouts/[id]` and `GET /api/workouts/public` (the phone's saved-workouts list) are public and read-only: they return the workout id, its settings and the creator's display name, nothing else. The "unguessable link" is therefore no longer a secret; workout settings are not sensitive and cannot be changed without signing in.
 
@@ -62,7 +62,7 @@ pnpm build && pnpm start   # the service worker only registers in production bui
 
 ## Using it as an installed app (PWA)
 
-The phone should run the timer as an installed app (full screen, no browser bars, opens offline).
+The phone should run the timer as an installed app (full screen, no browser bars, opens offline). Inside the installed app the Full screen button is hidden, since the app is already full screen.
 
 - **Android / Chrome:** the timer page shows an **Install** button. The manifest asks for full-screen display, for links to open in the installed app (`handle_links`) and for an already-open app window to be reused (`launch_handler`). Once installed, Chrome offers to open timer links in the app.
 - **iPhone / iPad:** Apple has no install prompt and does not open links in an installed web app (the Camera app sends a scanned QR code to Safari), so the timer page shows the *Share → Add to Home Screen* steps. Inside the installed app the start page has a **Scan QR code** button (camera + [jsQR](https://github.com/cozmo/jsQR), no server involved) and a field for the workout **code** (or a pasted link). It also lists recently used workouts, which work offline.

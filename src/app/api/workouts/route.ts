@@ -9,6 +9,15 @@ import { listWorkouts } from "@/lib/workoutQueries";
 
 const noStore = { "Cache-Control": "no-store" };
 
+/** Postgres unique_violation (23505), also when wrapped by the driver or the query builder. */
+function isUniqueViolation(e: unknown): boolean {
+  for (let err = e as { code?: string; cause?: unknown } | undefined, depth = 0; err && depth < 4; depth++) {
+    if (err.code === "23505") return true;
+    err = err.cause as typeof err;
+  }
+  return false;
+}
+
 /** List saved workouts. Coaches only. */
 export async function GET() {
   if (!(await getCoachEmail())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,11 +41,19 @@ export async function POST(request: Request) {
     if (!(await getCoachName(email))) {
       return NextResponse.json({ error: "Choose your name first" }, { status: 403, headers: noStore });
     }
-    const [row] = await getDb()
-      .insert(schema.workouts)
-      .values({ id: newId(), name: config.name, config, createdBy: email })
-      .returning();
-    return NextResponse.json({ workout: row }, { status: 201, headers: noStore });
+    // Codes are short, so two workouts can very rarely draw the same one: try again with a new code.
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        const [row] = await getDb()
+          .insert(schema.workouts)
+          .values({ id: newId(), name: config.name, config, createdBy: email })
+          .returning();
+        return NextResponse.json({ workout: row }, { status: 201, headers: noStore });
+      } catch (e) {
+        if (!isUniqueViolation(e)) throw e;
+      }
+    }
+    throw new Error("could not find a free workout code");
   } catch (e) {
     return serviceError("POST /api/workouts", e);
   }
