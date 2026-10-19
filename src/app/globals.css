@@ -60,13 +60,18 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* While the timer is shown the page itself must never scroll: a scrollable page lets iPhone shift the fixed layers. */
+html.page-lock,
+html.page-lock body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* ---- Phone timer ---- */
 
 .timer-root {
   position: fixed;
   inset: 0;
-  /* Follows the visible area as iPhone Safari's toolbars come and go, so no strip is left below. */
-  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--bg);

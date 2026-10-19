@@ -2,7 +2,7 @@
 export function TimerSkeleton() {
   return (
     <main
-      className="fixed inset-x-0 top-0 flex h-dvh flex-col bg-night px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),0.75rem)]"
+      className="fixed inset-0 flex flex-col bg-night px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),0.75rem)]"
       aria-busy="true"
       aria-label="Loading workout"
     >

@@ -3,7 +3,7 @@
 export default function TimerLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <style>{"html,body{background:#101114;min-height:100dvh}"}</style>
+      <style>{"html,body{background:#101114}"}</style>
       {children}
     </>
   );
