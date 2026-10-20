@@ -27,6 +27,10 @@ Next.js (App Router) · TypeScript · Tailwind · Auth.js (Google) · Neon Postg
 - Each coach chooses a display name on first sign-in (`/welcome`, changeable later). It is stored in the `coaches` table and shown as the creator of their workouts on the coach page and on phones. Emails are never exposed publicly.
 - `GET /api/workouts/[id]` and `GET /api/workouts/public` (the phone's saved-workouts list) are public and read-only: they return the workout id, its settings and the creator's display name, nothing else. The "unguessable link" is therefore no longer a secret; workout settings are not sensitive and cannot be changed without signing in.
 
+## Checks
+
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, tests and the production build on every push and pull request. The same three commands locally: `pnpm lint`, `pnpm test`, `pnpm build`.
+
 ## Run locally
 
 ```bash

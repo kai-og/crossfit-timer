@@ -1,0 +1,42 @@
+name: CI
+
+# Lint, test and build on every push and pull request.
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch makes an older, still-running check pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # The pnpm version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      # No secrets needed: pages that read the database or the session are rendered per request, not at build time.
+      - name: Build
+        run: pnpm build
